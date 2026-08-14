@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -28,11 +28,11 @@ jobs:
       - name: Install Python
         run: uv python install 3.13
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Check version metadata
-        run: python dev/check_version.py
+        run: uv run python dev/check_version.py
       - name: Check public tree
-        run: python dev/check_public_tree.py
+        run: uv run python dev/check_public_tree.py
       - name: Lint
         run: uv run ruff check .
       - name: Test

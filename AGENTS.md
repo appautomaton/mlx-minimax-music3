@@ -43,7 +43,7 @@ Make the smallest coherent change and validate it with:
 ```sh
 uv run ruff check .
 uv run pytest -q
-python dev/check_public_tree.py
+uv run python dev/check_public_tree.py
 uv build --no-sources
 ```
 

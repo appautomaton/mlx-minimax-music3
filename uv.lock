@@ -170,6 +170,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/15/94/1b2a1e3b60fce6bd61ca8af3ccfe0da30f42184352a70123870fd960ce0d/mlx-0.32.0-cp313-cp313-win_arm64.whl", hash = "sha256:df6fa6785fb7a6f8d8e3e91c41074c885aa253b09c2b69e3c4d4f905e3c457e3", size = 543559, upload-time = "2026-07-07T17:56:03.644Z" },
 ]
 
+[package.optional-dependencies]
+cpu = [
+    { name = "mlx-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[package]]
+name = "mlx-cpu"
+version = "0.32.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/f7/5d9b53ad219d2ed31f66a103eba097e07a77bb5b0b0ea4dbfb12a8bfd224/mlx_cpu-0.32.0-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:b23f19d34073445b32a724358ba21bfb114a84021c9507be700479a191a9ae08", size = 8792264, upload-time = "2026-07-07T17:55:12.942Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/02/16c07a41e382312d6b86f1df5ee2975246b94f88a289c0468a9d9a5cd368/mlx_cpu-0.32.0-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:d5052fa8e1cbc135cc4b6fc09745f9a57a2cbd1b4def17449e965ef263239d75", size = 10370672, upload-time = "2026-07-07T17:55:15.263Z" },
+]
+
 [[package]]
 name = "mlx-metal"
 version = "0.32.0"
@@ -190,6 +204,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mlx", extra = ["cpu"], marker = "sys_platform == 'linux'" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "tokenizers" },
@@ -200,6 +215,7 @@ requires-dist = [{ name = "mlx", specifier = ">=0.32" }]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mlx", extras = ["cpu"], marker = "sys_platform == 'linux'", specifier = ">=0.32,<0.33" },
     { name = "pytest", specifier = ">=9.1.1,<10" },
     { name = "ruff", specifier = ">=0.16.3,<0.17" },
     { name = "tokenizers", specifier = ">=0.23.1,<0.24" },

@@ -74,7 +74,7 @@
     {
       "@type": "Question",
       "name": "Can I generate music with mlx-minimax-music3 today?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Yes, through the Python API. Dense component parity and waveform execution are validated locally, so generation runs end to end. Overall music quality, quantized quality, long-form generation, and the reference 32 kHz output profile are still being brought to parity. There is no command-line interface." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes, through the Python API. Dense tensor mapping and waveform execution are validated locally, so generation runs end to end. Overall music quality, quantized quality, long-form generation, and the reference 32 kHz output profile are still being brought to parity. There is no command-line interface." }
     },
     {
       "@type": "Question",
@@ -509,7 +509,7 @@
     </div>
 
     <div class="handoff">
-      <pre class="code rise"><code><i># Dense is the parity-validated profile; selective-q8 is experimental.</i>
+      <pre class="code rise"><code><i># Dense is the correctness baseline; selective-q8 is experimental.</i>
 <b>from</b> mlx_minimax_music3 <b>import</b> GenerationRequest, Music3Pipeline
 
 pipeline = <u>Music3Pipeline</u>(<i>"weights/mlx-dense/MiniMax-Music3"</i>)

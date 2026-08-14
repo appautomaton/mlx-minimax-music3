@@ -4,7 +4,11 @@ version = "0.0.1a0"
 description = "Pure MLX inference for MiniMax Music 3 on Apple Silicon."
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = [
+    "LICENSE",
+    "LICENSES/Apache-2.0.txt",
+    "THIRD_PARTY_NOTICES.md",
+]
 authors = [{ name = "AppAutomaton" }]
 requires-python = ">=3.13,<3.14"
 keywords = [
@@ -38,6 +42,7 @@ Issues = "https://github.com/appautomaton/mlx-minimax-music3/issues"
 
 [dependency-groups]
 dev = [
+    "mlx[cpu]>=0.32,<0.33; sys_platform == 'linux'",
     "pytest>=9.1.1,<10",
     "ruff>=0.16.3,<0.17",
     "tokenizers>=0.23.1,<0.24",
@@ -50,6 +55,7 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 source-include = [
     "CHANGELOG.md",
+    "LICENSES/**",
     "THIRD_PARTY_NOTICES.md",
     "docs/**",
     "tests/**",

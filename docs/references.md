@@ -1,8 +1,8 @@
 # Reference implementations
 
-Upstream source is kept in the ignored `.references/` directory for inspection
-and parity work. Reference code is read-only: it is not vendored, imported by the
-runtime, or included in distributions.
+Upstream source is kept in the ignored `.references/` directory for static
+inspection. Reference code is read-only: it is not executed, vendored, imported
+by the runtime, or included in distributions.
 
 MiniMax H3 is a video model and is not a predecessor or implementation reference
 for MiniMax Music 3. The sibling `mlx-video` project is useful only for general
@@ -16,7 +16,7 @@ locally:
 
 | Local path | Upstream | Role | License |
 |---|---|---|---|
-| `.references/diffusers` | `huggingface/diffusers` | Primary model equations, tensor mapping, component pipeline, and parity tests | Apache-2.0 |
+| `.references/diffusers` | `huggingface/diffusers` | Primary model equations, tensor mapping, and component pipeline semantics | Apache-2.0 |
 | `.references/sglang-omni` | `sgl-project/sglang-omni` | End-to-end request behavior, autoregressive generation, chunking, scheduler, and waveform assembly | Apache-2.0 |
 
 Both checkouts are shallow, blob-filtered, and sparse. Their working trees contain
@@ -32,8 +32,8 @@ git -C .references/sglang-omni pull --ff-only
 git -C .references/sglang-omni sparse-checkout reapply
 ```
 
-After updating either checkout, rerun component parity tests before changing the
-revision record below.
+After updating either checkout, audit relevant source changes and rerun the
+pure-MLX regression suite before changing the revision record below.
 
 ## Authoritative external sources
 
@@ -69,4 +69,4 @@ These are the exact sources used to establish the initial porting contract on
 | Existing local MLX Qwen3 | `c2fe301bb3f2` (`mlx-vlm`) | n/a |
 
 Stars are recorded only as a repository-identity sanity check and will naturally
-change. Revisions, not star counts, define parity expectations.
+change. Revisions, not star counts, define source-conformance expectations.

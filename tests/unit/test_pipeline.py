@@ -36,6 +36,7 @@ def _write_manifest(root: Path, *, profile: str = "dense") -> None:
     ).write(root / "manifest.json")
 
 
+@pytest.mark.usefixtures("isolated_stage_memory")
 def test_private_pipeline_orders_residency_and_writes_audio(
     tmp_path: Path,
     monkeypatch,

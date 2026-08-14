@@ -99,12 +99,12 @@ for a running SGLang-Omni server. It is not an inference implementation.
 |---|---|---|
 | Configuration | No weights | Catch layout and default-value mistakes |
 | Tiny module | Synthetic weights | Catch transpose, normalization, and masking errors |
-| Component parity | Local checkpoint | Compare autoregressive, DiT, and decoder stages |
+| Component invariants | Local checkpoint | Validate autoregressive, DiT, and decoder stage contracts |
 | End-to-end smoke | Full checkpoint | Produce a valid deterministic WAV |
 | Quality regression | Full checkpoint | Compare audio structure and prompt adherence |
 | Quantized component | Dense and q8 checkpoints | Bound error introduced by each allowlisted module group |
 | Memory lifecycle | Dense and q8 checkpoints | Verify stage teardown and peak-memory budgets |
 
-Default CI must run the first two tiers without model downloads. PyTorch may be
-used by separate development-only fixture generators, but it must never be a
-runtime dependency or a requirement for normal tests.
+Default CI runs the first two tiers without model downloads. All validation tiers
+use MLX; upstream framework implementations are read only as transparent source
+specifications and are not executed by this project.

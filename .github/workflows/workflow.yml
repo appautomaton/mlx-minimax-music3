@@ -4,18 +4,25 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: pypi-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
 
 jobs:
   build:
     name: Build distributions
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          ref: ${{ github.event.release.tag_name }}
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
@@ -23,11 +30,11 @@ jobs:
       - name: Install Python
         run: uv python install 3.13
       - name: Validate package version
-        run: python dev/check_version.py
+        run: uv run --no-project --python 3.13 python dev/check_version.py
       - name: Validate release metadata
-        run: python dev/check_release.py
+        run: uv run --no-project --python 3.13 python dev/check_release.py
       - name: Check public tree
-        run: python dev/check_public_tree.py
+        run: uv run --no-project --python 3.13 python dev/check_public_tree.py
       - name: Build wheel and source distribution
         run: uv build --no-sources
       - name: Upload distributions
@@ -36,11 +43,54 @@ jobs:
           name: python-package-distributions
           path: dist/
           if-no-files-found: error
+          retention-days: 1
+
+  verify:
+    name: Verify release artifacts
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.release.tag_name }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.4"
+      - name: Install Python
+        run: uv python install 3.13
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Lint source
+        run: uv run ruff check .
+      - name: Test source
+        run: uv run pytest -q
+      - name: Download distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Smoke test wheel
+        run: >-
+          uv run --isolated --no-project --with dist/*.whl
+          --with "mlx[cpu]>=0.32,<0.33"
+          python dev/smoke_test_distribution.py
+      - name: Smoke test source distribution
+        run: >-
+          uv run --isolated --no-project --with dist/*.tar.gz
+          --with "mlx[cpu]>=0.32,<0.33"
+          python dev/smoke_test_distribution.py
 
   publish:
     name: Publish distributions
-    needs: build
+    needs: [build, verify]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: pypi
       url: https://pypi.org/project/mlx-minimax-music3/
@@ -54,3 +104,5 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          attestations: true
