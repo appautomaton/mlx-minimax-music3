@@ -6,6 +6,8 @@ from mlx import nn
 
 from mlx_minimax_music3.stages import StageMemoryPolicy, StageSession
 
+pytestmark = pytest.mark.usefixtures("isolated_stage_memory")
+
 
 def test_stage_materializes_handoff_and_releases_model() -> None:
     baseline = int(mx.get_active_memory())
