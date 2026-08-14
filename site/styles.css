@@ -1,0 +1,1080 @@
+@charset "utf-8";
+
+/* ══ tokens ══════════════════════════════════════════════════════════════
+   Black ground, bone type, and exactly two accents. Colour is the phase
+   axis of the model and nothing else: cyan is discrete (codebook indices,
+   autoregressive frames), rose is continuous (flow-matched latents, the
+   waveform). Anything that is neither is grey. A third accent was drafted
+   and cut -- with only two, a lit cell always means something.
+
+   Contrast is measured against --black, since every surface sits on it.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --black:  #000000;
+  --ink:    #07080c;
+  --shelf:  #0d0f16;
+  --raise:  #141821;
+  --rule:   #1e2430;
+  --rule-2: #2c3444;
+
+  --bone:  #f2f4f8;   /* 19.4:1 */
+  --dust:  #aeb6c4;   /*  9.3:1 -- body copy */
+  --faint: #7f8899;   /*  5.9:1 -- the floor; captions and labels only */
+
+  --code: #67e8f9;    /* 14.5:1 -- discrete */
+  --flow: #fb7bac;    /*  8.5:1 -- continuous */
+
+  /* Cabinet Grotesk carries the display voice at one weight. Everything
+     else is the platform's own type: on the Apple silicon this project
+     targets, that is SF Pro and SF Mono, already resident and already
+     hinted for the screen it will be read on. */
+  --display: 'Cabinet Grotesk', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --text: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, 'Cascadia Mono', 'Roboto Mono', monospace;
+
+  --measure: 60ch;
+  --gutter: clamp(1.25rem, 5vw, 4.5rem);
+  --max: 1180px;
+
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --step: cubic-bezier(.16, 1, .3, 1);
+}
+
+/* ══ reset ══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--black);
+  color: var(--dust);
+  font-family: var(--text);
+  font-size: clamp(1rem, .4vw + .92rem, 1.125rem);
+  font-weight: 380;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* A fixed lattice of hairlines at the frame pitch. The page is ruled the
+   way the representation is: in columns, one per frame. Barely visible on
+   purpose -- it should read as texture, not as a grid overlay. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .5;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--rule) 0 1px,
+    transparent 1px 88px
+  );
+  mask-image: linear-gradient(180deg, #000 0%, transparent 42%);
+}
+
+.masthead, .page, .foot { position: relative; z-index: 1; }
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; }
+
+:focus-visible {
+  outline: 2px solid var(--code);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  padding: .75rem 1rem;
+  background: var(--code);
+  color: var(--black);
+  font-family: var(--mono);
+  font-size: .75rem;
+  z-index: 99;
+}
+.skip:focus { left: 0; }
+
+/* ══ type roles ═════════════════════════════════════════════════════════ */
+.label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* No non-breaking spaces in here. At display size a single unbreakable
+   token is wider than a phone, and `overflow-x: hidden` then clips the
+   headline instead of wrapping it. */
+.h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.25rem, 10.5vw, 8.5rem);
+  line-height: .86;
+  letter-spacing: -.04em;
+  color: var(--bone);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(1.875rem, 4.6vw, 3.5rem);
+  line-height: .96;
+  letter-spacing: -.03em;
+  color: var(--bone);
+  text-wrap: balance;
+  max-width: 18ch;
+}
+
+.lede {
+  margin: 0;
+  font-size: clamp(1.0625rem, .6vw + .95rem, 1.375rem);
+  line-height: 1.5;
+  color: var(--dust);
+  max-width: 46ch;
+  text-wrap: pretty;
+}
+
+.prose { max-width: var(--measure); }
+.prose p { margin: 0 0 1.1em; text-wrap: pretty; }
+.prose p:last-child { margin-bottom: 0; }
+.prose strong { color: var(--bone); font-weight: 600; }
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "zero" 1;
+  color: var(--bone);
+}
+
+/* ══ layout ═════════════════════════════════════════════════════════════ */
+.wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.band { padding-block: clamp(4.5rem, 11vw, 9rem); }
+.band--tight { padding-block: clamp(3rem, 7vw, 5.5rem); }
+
+/* A single hairline, drawn at the left edge only, so the section head reads
+   as an entry in a list rather than a boxed card. */
+.band + .band { border-top: 1px solid var(--rule); }
+
+.head { margin-bottom: clamp(2rem, 4vw, 3.25rem); }
+.head .label { margin-bottom: 1rem; }
+.head .h2 + .lede { margin-top: 1.25rem; }
+
+/* ══ masthead ═══════════════════════════════════════════════════════════ */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--black) 82%, transparent);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead__in {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 3.25rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  transition: color .2s var(--ease);
+}
+.brand:hover { color: var(--bone); }
+.brand svg { width: 13px; height: 13px; }
+
+.masthead__nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: clamp(.75rem, 2vw, 1.5rem);
+}
+
+.navlink {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  transition: color .2s var(--ease);
+}
+.navlink:hover { color: var(--bone); }
+
+/* ══ hero ═══════════════════════════════════════════════════════════════ */
+.hero { padding-block: clamp(3.5rem, 9vw, 7rem) clamp(2.5rem, 6vw, 4.5rem); }
+.hero__kicker { margin-bottom: clamp(1.5rem, 3vw, 2.25rem); }
+.hero__h1 { margin-bottom: clamp(1.5rem, 3vw, 2.25rem); }
+.hero__h1 em {
+  font-style: normal;
+  color: var(--code);
+}
+
+.hero__grid {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3rem);
+  align-items: start;
+}
+@media (min-width: 56rem) {
+  .hero__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); }
+}
+
+.hero__meta {
+  display: grid;
+  gap: .625rem;
+  align-content: start;
+  justify-items: start;
+  padding-top: .375rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  align-self: start;
+  padding: .3rem .6rem;
+  border: 1px solid var(--rule-2);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.chip__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--flow);
+}
+/* Filled by app.js from the PyPI JSON API, so no release number is written
+   into the page and none can go stale. Hidden until it resolves. */
+.chip__ver { color: var(--code); }
+.chip__ver::before { content: " · "; color: var(--faint); }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .625rem;
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1rem;
+  border: 1px solid var(--rule-2);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: .75rem;
+  letter-spacing: .06em;
+  color: var(--dust);
+  transition: border-color .2s var(--ease), color .2s var(--ease), background-color .2s var(--ease);
+}
+.act:hover { border-color: var(--code); color: var(--bone); }
+.act svg { width: 14px; height: 14px; }
+.act--solid {
+  background: var(--bone);
+  border-color: var(--bone);
+  color: var(--black);
+}
+.act--solid:hover { background: var(--code); border-color: var(--code); color: var(--black); }
+
+/* ══ the lattice ════════════════════════════════════════════════════════
+   The hero artwork is the model's own output representation: eight
+   residual codebooks per frame, twenty-five frames a second. It is drawn
+   from the real shape, not from a decorative idea of one. */
+.lattice {
+  position: relative;
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding-block: clamp(1.25rem, 3vw, 2rem);
+}
+
+.lattice__svg {
+  width: 100%;
+  height: clamp(132px, 22vw, 208px);
+  overflow: visible;
+}
+
+/* No transition here on purpose. The animation frame rewrites each cell's
+   opacity directly, and a CSS transition on the same property would restart
+   on every frame -- the value would never settle, and the compositor would
+   be handed work it cannot use. */
+.lattice__cell { will-change: opacity; }
+
+.lattice__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem clamp(1rem, 3vw, 2.25rem);
+  margin-top: 1rem;
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .08em;
+  color: var(--faint);
+}
+.key::before {
+  content: "";
+  width: 14px;
+  height: 3px;
+  background: currentcolor;
+}
+.key--code { color: var(--code); }
+.key--flow { color: var(--flow); }
+.key--rest { color: var(--faint); }
+
+/* ══ stance ═════════════════════════════════════════════════════════════ */
+.stance {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+@media (min-width: 56rem) {
+  .stance { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+.deps { display: grid; gap: .5rem; align-content: start; }
+
+.dep {
+  display: flex;
+  align-items: baseline;
+  gap: .75rem;
+  padding: .55rem .75rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: .8125rem;
+}
+.dep__name { color: var(--faint); }
+.dep__note {
+  margin-left: auto;
+  font-size: .6875rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.dep--in {
+  border-color: var(--rule-2);
+  background: var(--ink);
+}
+.dep--in .dep__name { color: var(--code); }
+.dep--in .dep__note { color: var(--code); }
+.dep--out .dep__name { text-decoration: line-through; text-decoration-color: var(--rule-2); }
+
+/* ══ pipeline ═══════════════════════════════════════════════════════════
+   Five stages, numbered, because the order is the content: each stage
+   consumes what the one before it evaluated. */
+.rail {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+}
+@media (min-width: 62rem) {
+  .rail {
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+}
+
+/* The figure holds the viewport while the stages scroll past it. */
+.rail__figure { position: relative; }
+@media (min-width: 62rem) {
+  .rail__figure {
+    position: sticky;
+    top: 5.5rem;
+    order: 2;
+  }
+}
+
+/* An ordered list, because the order is the content -- but the stage number
+   is drawn by .stage__no, so the browser's own marker would be a second,
+   competing numbering. */
+.stages {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The stage being read is the one lit. This focus is driven by the same
+   observer that steps the meter, not by a scroll timeline, so the two can
+   never disagree -- and it still works where scroll timelines do not. */
+.stage {
+  padding-block: clamp(2rem, 8vh, 4.5rem);
+  border-top: 1px solid var(--rule);
+  opacity: .38;
+  transform: translate3d(0, .5rem, 0);
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+.stage:first-child { border-top: 0; padding-top: 0; }
+.stage.is-on { opacity: 1; transform: none; }
+
+/* Without JavaScript there is no observer to light anything, so every
+   stage stays fully legible. */
+.no-js .stage { opacity: 1; transform: none; }
+
+.stage__head {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .875rem;
+}
+
+.stage__no {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .1em;
+  color: var(--faint);
+  transition: color .35s var(--ease);
+}
+
+.stage__glyph {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--faint);
+  transition: color .35s var(--ease);
+}
+
+.stage__name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  letter-spacing: -.02em;
+  line-height: 1;
+  color: var(--dust);
+  transition: color .35s var(--ease);
+}
+
+.stage__body { max-width: 46ch; }
+.stage__body p { margin: 0 0 .9em; text-wrap: pretty; }
+.stage__body p:last-child { margin-bottom: 0; }
+
+.stage__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-top: 1rem;
+}
+.fact {
+  padding: .25rem .5rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Active stage. Cyan for the discrete half of the pipeline, rose for the
+   continuous half -- the same rule the lattice uses. */
+.stage.is-on .stage__name { color: var(--bone); }
+.stage.is-on .stage__no,
+.stage.is-on .stage__glyph { color: var(--code); }
+.stage.is-on[data-kind="flow"] .stage__no,
+.stage.is-on[data-kind="flow"] .stage__glyph { color: var(--flow); }
+
+/* ══ stage glyphs ═══════════════════════════════════════════════════════
+   Five marks, drawn for these five stages and nothing else. Each one moves
+   only while its stage is the one being read, and each movement is the
+   thing the stage does: a caret typing, a residual stack filling by depth,
+   a wave being traced, an envelope breathing, output radiating. */
+.glyph-caret,
+.glyph-rvq,
+.glyph-wave,
+.glyph-bar,
+.glyph-out { transform-box: fill-box; }
+
+.stage.is-on .glyph-caret { animation: caret 1.05s steps(1, end) infinite; }
+
+.stage.is-on .glyph-rvq {
+  transform-origin: left center;
+  animation: fillrow 1.9s var(--ease) infinite;
+}
+.stage.is-on .glyph-rvq:nth-child(2) { animation-delay: .12s; }
+.stage.is-on .glyph-rvq:nth-child(3) { animation-delay: .24s; }
+.stage.is-on .glyph-rvq:nth-child(4) { animation-delay: .36s; }
+
+.glyph-wave { stroke-dasharray: 46; stroke-dashoffset: 0; }
+.stage.is-on .glyph-wave { animation: trace 2.6s var(--ease) infinite; }
+
+.stage.is-on .glyph-bar {
+  transform-origin: center;
+  animation: breathe 1.5s var(--ease) infinite;
+}
+.stage.is-on .glyph-bar:nth-child(2) { animation-delay: .1s; }
+.stage.is-on .glyph-bar:nth-child(3) { animation-delay: .2s; }
+.stage.is-on .glyph-bar:nth-child(4) { animation-delay: .3s; }
+.stage.is-on .glyph-bar:nth-child(5) { animation-delay: .4s; }
+
+.stage.is-on .glyph-out { animation: radiate 2s var(--ease) infinite; }
+
+@keyframes caret  { 0%, 45% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes fillrow { 0%, 100% { transform: scaleX(.35); opacity: .45; } 45% { transform: scaleX(1); opacity: 1; } }
+@keyframes trace  { 0% { stroke-dashoffset: 46; } 55%, 100% { stroke-dashoffset: 0; } }
+@keyframes breathe { 0%, 100% { transform: scaleY(.5); } 50% { transform: scaleY(1); } }
+@keyframes radiate { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* ══ residency meter ════════════════════════════════════════════════════ */
+.meter {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--ink), var(--black));
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.meter__top {
+  display: flex;
+  align-items: baseline;
+  gap: .75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.meter__read {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: .3rem;
+}
+.meter__value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.5rem, 3.6vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--bone);
+  transition: color .35s var(--ease);
+}
+.meter__unit {
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--faint);
+}
+.meter.is-flow .meter__value { color: var(--flow); }
+.meter.is-code .meter__value { color: var(--code); }
+
+/* The bar the reader is meant to remember: what is held now, against the
+   full checkpoint that never has to be. */
+.gauge { padding-block: 1rem; border-bottom: 1px solid var(--rule); }
+
+.gauge__track {
+  position: relative;
+  height: 10px;
+  border: 1px solid var(--rule-2);
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--black);
+}
+.gauge__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: var(--code);
+  transition: transform .6s var(--step), background-color .35s var(--ease);
+}
+.meter.is-flow .gauge__fill { background: var(--flow); }
+
+.gauge__scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: .5rem;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .08em;
+  color: var(--faint);
+}
+
+.comps { display: grid; gap: 0; padding-top: .5rem; }
+
+.comp {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: .5rem 1rem;
+  padding-block: .5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.comp:last-child { border-bottom: 0; }
+
+.comp__name {
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--faint);
+  transition: color .35s var(--ease);
+  overflow-wrap: anywhere;
+}
+.comp__size {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: .75rem;
+  color: var(--faint);
+  transition: color .35s var(--ease);
+}
+/* Bar length is the component's share of the largest one, so the rows carry
+   the size relationship as well as the number. --w is set per row in the
+   markup and floored so a negligible component still draws. */
+.comp__bar {
+  grid-column: 1 / -1;
+  height: 2px;
+  background: var(--rule);
+  transform-origin: left center;
+  transform: scaleX(var(--w, 1));
+  transition: background-color .35s var(--ease), opacity .35s var(--ease);
+  opacity: .5;
+}
+.comp.is-on .comp__name,
+.comp.is-on .comp__size { color: var(--bone); }
+.comp.is-on .comp__bar { background: var(--code); opacity: 1; }
+.comp.is-on[data-kind="flow"] .comp__bar { background: var(--flow); }
+
+.meter__note {
+  margin: 1rem 0 0;
+  font-family: var(--mono);
+  font-size: .6875rem;
+  line-height: 1.55;
+  color: var(--faint);
+}
+
+/* ══ handoff panel ══════════════════════════════════════════════════════ */
+.handoff {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  align-items: start;
+}
+@media (min-width: 56rem) {
+  .handoff { grid-template-columns: minmax(0, 1fr) minmax(0, 22rem); }
+}
+
+.slider { margin-top: 1.5rem; }
+.slider__row {
+  display: flex;
+  align-items: baseline;
+  gap: .75rem;
+  margin-bottom: .625rem;
+}
+.slider__out {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: .8125rem;
+  color: var(--bone);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: ew-resize;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--rule-2);
+}
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--rule-2);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--code);
+  border: 0;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--code);
+}
+
+.readouts {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--ink);
+}
+.readout {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: .7rem .875rem;
+  border-bottom: 1px solid var(--rule);
+}
+.readout:last-child { border-bottom: 0; }
+.readout__k {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.readout__v {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: .8125rem;
+  color: var(--bone);
+}
+
+/* ══ tables ═════════════════════════════════════════════════════════════ */
+.tablewrap { overflow-x: auto; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+  min-width: 30rem;
+}
+.table th,
+.table td {
+  padding: .7rem .75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: baseline;
+}
+.table th {
+  font-family: var(--mono);
+  font-size: .625rem;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.table td:first-child { font-family: var(--mono); font-size: .8125rem; color: var(--bone); }
+.table .n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.table tfoot td {
+  border-bottom: 0;
+  border-top: 1px solid var(--rule-2);
+  color: var(--bone);
+}
+
+/* Five states, and only the one that means "checked against the reference"
+   gets an accent. Ready is structural work, so it stays quiet. */
+.state { display: inline-flex; align-items: center; gap: .45rem; font-family: var(--mono); font-size: .75rem; }
+.state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--rule-2); }
+.state--ok { color: var(--code); }
+.state--ok::before { background: var(--code); }
+.state--ready { color: var(--dust); }
+.state--ready::before { background: var(--dust); }
+.state--doc { color: var(--dust); }
+.state--doc::before { background: var(--rule-2); }
+.state--warn { color: var(--flow); }
+.state--warn::before { background: var(--flow); }
+.state--planned { color: var(--faint); }
+
+/* ══ code ═══════════════════════════════════════════════════════════════ */
+.code {
+  margin: 0;
+  padding: clamp(1rem, 2.5vw, 1.375rem);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--ink);
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: .8125rem;
+  line-height: 1.7;
+  color: var(--dust);
+  tab-size: 2;
+}
+.code b { font-weight: inherit; color: var(--code); }
+.code i { font-style: normal; color: var(--faint); }
+.code u { text-decoration: none; color: var(--bone); }
+
+/* ══ precision profiles ═════════════════════════════════════════════════ */
+.profiles {
+  display: grid;
+  gap: 1px;
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+@media (min-width: 46rem) {
+  .profiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile--wide { grid-column: 1 / -1; }
+}
+
+.profile {
+  background: var(--ink);
+  padding: clamp(1rem, 2.5vw, 1.375rem);
+}
+.profile__use {
+  margin: .625rem 0 .5rem;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.0625rem;
+  letter-spacing: -.015em;
+  color: var(--bone);
+}
+.profile__body {
+  margin: 0;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--dust);
+  text-wrap: pretty;
+}
+.profile--wide .profile__body { max-width: 72ch; }
+
+/* ══ faq ════════════════════════════════════════════════════════════════ */
+.faq { display: grid; gap: 0; }
+
+.qa { border-top: 1px solid var(--rule); }
+.qa:last-child { border-bottom: 1px solid var(--rule); }
+
+.qa__q {
+  margin: 0;
+  padding: 1.1rem 0 .5rem;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+  letter-spacing: -.015em;
+  line-height: 1.25;
+  color: var(--bone);
+  max-width: 34ch;
+}
+.qa__a {
+  margin: 0;
+  padding-bottom: 1.1rem;
+  max-width: 58ch;
+  color: var(--dust);
+  text-wrap: pretty;
+}
+
+/* ══ links inside prose ═════════════════════════════════════════════════ */
+.link {
+  color: var(--bone);
+  border-bottom: 1px solid var(--rule-2);
+  transition: border-color .2s var(--ease), color .2s var(--ease);
+}
+.link:hover { color: var(--code); border-color: var(--code); }
+
+/* ══ ecosystem + footer ═════════════════════════════════════════════════ */
+.foot {
+  border-top: 1px solid var(--rule);
+  padding-block: clamp(3rem, 7vw, 5rem) clamp(2rem, 5vw, 3rem);
+}
+
+.eco {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+@media (min-width: 46rem) {
+  .eco { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.eco__col { display: grid; gap: .5rem; align-content: start; }
+.eco__col .label { margin-bottom: .375rem; }
+
+.eco__link {
+  font-family: var(--mono);
+  font-size: .8125rem;
+  color: var(--dust);
+  transition: color .2s var(--ease);
+  overflow-wrap: anywhere;
+}
+.eco__link:hover { color: var(--code); }
+.eco__link span { color: var(--faint); }
+
+.colophon {
+  display: grid;
+  gap: 1rem;
+  padding-top: clamp(1.5rem, 4vw, 2.5rem);
+  border-top: 1px solid var(--rule);
+  font-size: .8125rem;
+  color: var(--faint);
+  max-width: var(--measure);
+}
+.colophon p { margin: 0; }
+
+/* ══ scroll-driven presentation ═════════════════════════════════════════
+   Content is carried in and carried back out: each block rises into focus
+   as it enters and releases as it leaves, so the page reads as a sequence
+   of held moments rather than a strip of text sliding past.
+
+   Two timelines per element, one bound to `entry` and one to `exit`, so
+   arrival and departure are tuned separately -- a single `cover` range
+   would start fading tall blocks while they are still being read.
+
+   The revealed state is the default. Firefox still keeps scroll-driven
+   animations behind a flag, so there the whole page is simply present,
+   with no entrance. Only opacity and transform are animated, which keeps
+   the work on the compositor thread. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Carry in and carry out as ONE animation over the `cover` range.
+       Two animations bound to `entry` and `exit` separately looks like the
+       tidier expression of this, but both would be animating opacity and
+       transform, and when two animations touch the same property the last
+       one declared wins outright -- whatever its own range says. The entry
+       fade simply never renders. One animation, four keyframes, no
+       conflict. */
+    .head,
+    .stagger > * {
+      animation: pass linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+
+    /* Heads travel further, so a new section announces itself. */
+    .head { animation-name: pass-far; }
+
+    /* Scroll timelines ignore animation-delay, so a stagger has to be a
+       shift in the range instead of a shift in time. */
+    .stagger > *:nth-child(2) { animation-range: cover 3% cover 100%; }
+    .stagger > *:nth-child(3) { animation-range: cover 6% cover 100%; }
+    .stagger > *:nth-child(4) { animation-range: cover 9% cover 100%; }
+    .stagger > *:nth-child(5) { animation-range: cover 12% cover 100%; }
+    .stagger > *:nth-child(6) { animation-range: cover 15% cover 100%; }
+    .stagger > *:nth-child(7) { animation-range: cover 18% cover 100%; }
+    .stagger > *:nth-child(8) { animation-range: cover 21% cover 100%; }
+
+    /* Entry only. These are the tall blocks -- tables, long prose -- and a
+       tall subject begins its exit range while its lower half is still on
+       screen, so carrying them out would dim text still being read. */
+    .rise {
+      animation: arrive linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 58%;
+    }
+
+    /* The rule above each band draws itself left to right as the band
+       arrives, so the divider is an event rather than a fixture. */
+    .band + .band {
+      border-top-color: transparent;
+      background-image: linear-gradient(90deg, var(--rule) 0 100%);
+      background-repeat: no-repeat;
+      background-size: 100% 1px;
+      background-position: top left;
+      animation: draw linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 42%;
+    }
+
+    /* The hero releases the page rather than scrolling off it. */
+    .hero__h1,
+    .hero__grid {
+      animation: release linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+
+    /* The lattice settles back as it goes, which reads as depth without
+       resorting to a parallax offset that fights the scrollbar. */
+    .lattice {
+      animation: recede linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+  }
+}
+
+@keyframes arrive {
+  from { opacity: 0; transform: translate3d(0, 1.75rem, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Rise into focus over the first quarter, hold through the middle half,
+   release over the last quarter. The long hold is the point: the reader
+   gets the block at full strength for most of its time on screen. */
+@keyframes pass {
+  0%        { opacity: 0; transform: translate3d(0, 1.75rem, 0); }
+  20%, 82%  { opacity: 1; transform: none; }
+  100%      { opacity: 0; transform: translate3d(0, -1.25rem, 0); }
+}
+
+@keyframes pass-far {
+  0%        { opacity: 0; transform: translate3d(0, 3rem, 0); }
+  28%, 72%  { opacity: 1; transform: none; }
+  100%      { opacity: 0; transform: translate3d(0, -2rem, 0); }
+}
+
+@keyframes release {
+  from { opacity: 1; transform: none; }
+  to   { opacity: .1; transform: translate3d(0, -1.5rem, 0); }
+}
+
+@keyframes recede {
+  from { opacity: 1; transform: none; }
+  to   { opacity: .16; transform: scale(.975); }
+}
+
+@keyframes draw {
+  from { background-size: 0% 1px; }
+  to   { background-size: 100% 1px; }
+}
+
+/* ══ reduced motion ═════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* ══ narrow screens ═════════════════════════════════════════════════════ */
+@media (max-width: 40rem) {
+  body::before { background-size: 44px 100%; }
+  .masthead__nav { gap: .75rem; }
+  .hero__h1 { font-size: clamp(2.125rem, 10vw, 4rem); }
+  .table { min-width: 26rem; font-size: .8125rem; }
+}
+
+@media (max-width: 30rem) {
+  .navlink[data-optional] { display: none; }
+}

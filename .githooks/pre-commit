@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+python3 dev/check_public_tree.py --cached
+python3 dev/check_version.py
+

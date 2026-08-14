@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<script>document.documentElement.classList.remove('no-js')</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mlx-minimax-music3 · MiniMax Music 3 in pure MLX on Apple silicon</title>
+<meta name="description" content="A pure-MLX inference runtime for MiniMax Music 3. Lyrics and a structured caption to 44.1 kHz stereo on Apple silicon, with phase-scoped model residency and no PyTorch at runtime.">
+<meta name="author" content="appautomaton">
+<link rel="canonical" href="https://appautomaton.renocrypt.com/mlx-minimax-music3/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="mlx-minimax-music3">
+<meta property="og:title" content="mlx-minimax-music3 · MiniMax Music 3 in pure MLX">
+<meta property="og:description" content="Eight codebooks a frame, twenty-five frames a second, flow-matched to stereo audio. Phase-scoped model residency, no PyTorch at runtime.">
+<meta property="og:url" content="https://appautomaton.renocrypt.com/mlx-minimax-music3/">
+<meta property="og:image" content="https://opengraph.githubassets.com/1/appautomaton/mlx-minimax-music3">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="mlx-minimax-music3 · MiniMax Music 3 in pure MLX">
+<meta name="twitter:description" content="Eight codebooks a frame, twenty-five frames a second, flow-matched to stereo audio. Phase-scoped model residency, no PyTorch at runtime.">
+<meta name="twitter:image" content="https://opengraph.githubassets.com/1/appautomaton/mlx-minimax-music3">
+
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f%5B%5D=cabinet-grotesk@800&display=swap">
+<link rel="stylesheet" href="styles.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": "https://appautomaton.renocrypt.com/mlx-minimax-music3/#project",
+  "name": "mlx-minimax-music3",
+  "description": "A pure-MLX inference runtime for MiniMax Music 3. Lyrics and a structured caption to 44.1 kHz stereo audio on Apple silicon, with phase-scoped model residency and no PyTorch at runtime.",
+  "url": "https://appautomaton.renocrypt.com/mlx-minimax-music3/",
+  "codeRepository": "https://github.com/appautomaton/mlx-minimax-music3",
+  "downloadUrl": "https://pypi.org/project/mlx-minimax-music3/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS on Apple silicon",
+  "programmingLanguage": "Python",
+  "runtimePlatform": "MLX",
+  "license": "https://opensource.org/licenses/MIT",
+  "isPartOf": { "@id": "https://appautomaton.renocrypt.com/#website" },
+  "author": { "@id": "https://appautomaton.renocrypt.com/#org" },
+  "publisher": { "@id": "https://appautomaton.renocrypt.com/#org" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "App Automaton", "item": "https://appautomaton.renocrypt.com/" },
+    { "@type": "ListItem", "position": 2, "name": "mlx-minimax-music3", "item": "https://appautomaton.renocrypt.com/mlx-minimax-music3/" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://appautomaton.renocrypt.com/mlx-minimax-music3/#faq",
+  "isPartOf": { "@id": "https://appautomaton.renocrypt.com/mlx-minimax-music3/#project" },
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does mlx-minimax-music3 need PyTorch or CUDA?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. The only runtime dependency is MLX. PyTorch, Diffusers, Transformers, Accelerate, Torchaudio, Librosa, and huggingface_hub are all excluded from the runtime. MLX reads safetensors directly, checkpoint paths are local-first, and WAV output uses the Python standard library." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I generate music with mlx-minimax-music3 today?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes, through the Python API. Dense component parity and waveform execution are validated locally, so generation runs end to end. Overall music quality, quantized quality, long-form generation, and the reference 32 kHz output profile are still being brought to parity. There is no command-line interface." }
+    },
+    {
+      "@type": "Question",
+      "name": "What hardware does it need?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A Mac with Apple silicon. The componentized checkpoint is 26.56 GiB across 25 files, and the autoregressive phase alone holds about 17.19 GiB resident, so a large-memory configuration is the realistic target. Phase-scoped residency means the peak is one phase, not the whole checkpoint." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does installing the package download model weights?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Model weights are never included in the repository, the wheel, or the source distribution, and installing the package neither downloads them nor grants any additional rights to them. Checkpoint paths are local and explicit." }
+    },
+    {
+      "@type": "Question",
+      "name": "What sample rate does it output?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The current output profile is native 44.1 kHz stereo PCM16 WAV. The reference 32 kHz 16-bit serving profile is a separate explicit profile and is still in progress. The two are treated as distinct output profiles and are never silently conflated." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this project affiliated with MiniMax?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. This is an independent port and is not affiliated with or endorsed by MiniMax. The source code is MIT licensed. MiniMax Music 3 model weights are distributed separately under the MiniMax-Music3 Community License." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ══ masthead ══════════════════════════════════════════════════════ -->
+<header class="masthead">
+  <div class="wrap masthead__in">
+    <a class="brand" href="https://appautomaton.renocrypt.com/">
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <g fill="currentcolor">
+          <rect x="2" y="6"  width="28" height="3" rx="1.5"/>
+          <rect x="2" y="12" width="21" height="3" rx="1.5"/>
+          <rect x="2" y="18" width="14" height="3" rx="1.5"/>
+          <rect x="2" y="24" width="7"  height="3" rx="1.5"/>
+        </g>
+      </svg>
+      App&nbsp;Automaton
+    </a>
+    <nav class="masthead__nav" aria-label="Sections">
+      <a class="navlink" href="#path">Path</a>
+      <a class="navlink" href="#api">API</a>
+      <a class="navlink" href="#status" data-optional>Status</a>
+      <a class="navlink" href="#faq" data-optional>FAQ</a>
+      <a class="navlink" href="https://github.com/appautomaton/mlx-minimax-music3" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page" id="main">
+
+  <!-- ══ hero ════════════════════════════════════════════════════════ -->
+  <section class="wrap hero">
+    <p class="label hero__kicker">On-device, in pure MLX</p>
+
+    <h1 class="h1 hero__h1">MiniMax Music 3,<br>in <em>pure MLX</em>.</h1>
+
+    <div class="hero__grid">
+      <div>
+        <p class="lede">
+          Lyrics and a structured caption in. Eight codebooks a frame,
+          twenty-five frames a second, flow-matched into latents and decoded to
+          stereo. No PyTorch, no CUDA, no round trip to a server.
+        </p>
+
+        <div class="actions">
+          <a class="act act--solid" href="https://github.com/appautomaton/mlx-minimax-music3" rel="noopener">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentcolor">
+              <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38l-.01-1.49c-2.01.36-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+            </svg>
+            Source
+          </a>
+          <a class="act" href="https://pypi.org/project/mlx-minimax-music3/" rel="noopener">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentcolor" stroke-width="1.4">
+              <path d="M8 1.6 14 5v6l-6 3.4L2 11V5l6-3.4Z"/>
+              <path d="M2 5l6 3.4L14 5M8 8.4V14.4"/>
+            </svg>
+            PyPI
+          </a>
+          <a class="act" href="https://github.com/appautomaton/mlx-minimax-music3/tree/main/docs" rel="noopener">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentcolor" stroke-width="1.4">
+              <path d="M2.5 2.5h5a1.5 1.5 0 0 1 1.5 1.5v9a1.2 1.2 0 0 0-1.2-1.2H2.5Z"/>
+              <path d="M13.5 2.5h-5A1.5 1.5 0 0 0 7 4v9a1.2 1.2 0 0 1 1.2-1.2h5.3Z"/>
+            </svg>
+            Docs
+          </a>
+        </div>
+      </div>
+
+      <div class="hero__meta stagger">
+        <span class="chip"><span class="chip__dot"></span> Alpha<span class="chip__ver" id="release" hidden></span></span>
+        <span class="chip">Apple silicon · macOS</span>
+        <span class="chip">MIT source · weights separate</span>
+      </div>
+    </div>
+
+    <!-- The artwork is the representation itself: eight codebooks deep,
+         one column per frame, drawn from the real shape. -->
+    <figure class="lattice">
+      <svg class="lattice__svg" id="lattice" role="img"
+           aria-label="Eight rows of codebook cells filling left to right, one column per generated frame."></svg>
+      <figcaption class="lattice__foot">
+        <span class="key key--code">codebook 0 · semantic · 16,384 entries</span>
+        <span class="key key--rest">codebooks 1–7 · residual · 1,024 each</span>
+        <span class="key key--flow">frames handed to acoustic synthesis</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ══ dependency budget ═══════════════════════════════════════════ -->
+  <section class="wrap band">
+    <div class="head">
+      <p class="label">Dependency budget</p>
+      <h2 class="h2">One runtime dependency.</h2>
+    </div>
+
+    <div class="stance">
+      <div class="prose rise">
+        <p>
+          The runtime imports <strong>mlx</strong> and nothing else. A small local
+          tokenizer reads the checkpoint's own Qwen2 BPE vocabulary; Hugging Face
+          <span class="mono">tokenizers</span> checks its output during development
+          and ships in the dev group, never in the runtime.
+        </p>
+        <p>
+          MLX reads safetensors directly, checkpoint paths are local-first, and WAV
+          output uses the standard library. A package is added when runtime code
+          actually imports it and the implementation shows why MLX or the standard
+          library will not do.
+        </p>
+      </div>
+
+      <div class="deps stagger">
+        <div class="dep dep--in">
+          <span class="dep__name">mlx</span>
+          <span class="dep__note">runtime</span>
+        </div>
+        <div class="dep dep--out"><span class="dep__name">torch</span><span class="dep__note">excluded</span></div>
+        <div class="dep dep--out"><span class="dep__name">diffusers</span><span class="dep__note">excluded</span></div>
+        <div class="dep dep--out"><span class="dep__name">transformers</span><span class="dep__note">excluded</span></div>
+        <div class="dep dep--out"><span class="dep__name">accelerate</span><span class="dep__note">excluded</span></div>
+        <div class="dep dep--out"><span class="dep__name">torchaudio</span><span class="dep__note">excluded</span></div>
+        <div class="dep dep--out"><span class="dep__name">librosa</span><span class="dep__note">excluded</span></div>
+        <div class="dep dep--out"><span class="dep__name">huggingface_hub</span><span class="dep__note">excluded</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ generation path — the scroll signature ══════════════════════ -->
+  <section class="wrap band" id="path">
+    <div class="head">
+      <p class="label">Generation path</p>
+      <h2 class="h2">The whole checkpoint never has to be resident.</h2>
+      <p class="lede">
+        Unified memory does not make residency free. Each stage owns its weights
+        for exactly as long as it needs them, then evaluates its durable output
+        and drops them. Scroll the stages; the meter holds what is actually loaded.
+      </p>
+    </div>
+
+    <div class="rail">
+      <!-- sticky figure -->
+      <div class="rail__figure">
+        <figure class="meter" id="meter" data-phase="0">
+          <div class="meter__top">
+            <p class="label">Resident now</p>
+            <p class="meter__read">
+              <span class="meter__value" id="meterValue">0.00</span>
+              <span class="meter__unit">GiB</span>
+            </p>
+          </div>
+
+          <div class="gauge">
+            <div class="gauge__track">
+              <div class="gauge__fill" id="gaugeFill"></div>
+            </div>
+            <div class="gauge__scale">
+              <span>0</span>
+              <span id="gaugeGhost">26.56 · whole checkpoint</span>
+            </div>
+          </div>
+
+          <div class="comps" id="comps">
+            <div class="comp" style="--w:1.0" data-comp="language_model" data-kind="code">
+              <span class="comp__name">language_model</span>
+              <span class="comp__size">15.99</span>
+              <span class="comp__bar"></span>
+            </div>
+            <div class="comp" style="--w:0.075" data-comp="rvq_depth_decoder" data-kind="code">
+              <span class="comp__name">rvq_depth_decoder</span>
+              <span class="comp__size">1.20</span>
+              <span class="comp__bar"></span>
+            </div>
+            <div class="comp" style="--w:0.015" data-comp="condition_encoder" data-kind="flow">
+              <span class="comp__name">condition_encoder</span>
+              <span class="comp__size">0.09</span>
+              <span class="comp__bar"></span>
+            </div>
+            <div class="comp" style="--w:0.567" data-comp="transformer" data-kind="flow">
+              <span class="comp__name">transformer</span>
+              <span class="comp__size">9.06</span>
+              <span class="comp__bar"></span>
+            </div>
+            <div class="comp" style="--w:0.015" data-comp="vocoder" data-kind="flow">
+              <span class="comp__name">vocoder</span>
+              <span class="comp__size">0.20</span>
+              <span class="comp__bar"></span>
+            </div>
+          </div>
+
+          <figcaption class="meter__note">
+            Peak residency is one phase, not the sum: 17.19 GiB against the
+            26.56 GiB of the whole checkpoint, a third less. Sizes are the
+            published component weights.
+          </figcaption>
+        </figure>
+      </div>
+
+      <!-- the stages -->
+      <ol class="stages" id="stages">
+
+        <li class="stage" data-kind="code" data-phase="0">
+          <div class="stage__head">
+            <span class="stage__no">01</span>
+            <svg class="stage__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                 fill="none" stroke="currentcolor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M3 6h13M3 11h9M3 16h11"/>
+              <path class="glyph-caret" d="M20 4v16"/>
+            </svg>
+            <h3 class="stage__name">Prompt</h3>
+          </div>
+          <div class="stage__body prose">
+            <p>
+              Lyrics and a structured caption become conditional and unconditional
+              token IDs. The tokenizer reads the checkpoint's exact Qwen2 BPE
+              vocabulary. Nothing large is loaded yet.
+            </p>
+          </div>
+          <div class="stage__facts">
+            <span class="fact">0 GiB resident</span>
+            <span class="fact">Qwen2 BPE</span>
+          </div>
+        </li>
+
+        <li class="stage" data-kind="code" data-phase="1">
+          <div class="stage__head">
+            <span class="stage__no">02</span>
+            <svg class="stage__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentcolor">
+              <rect class="glyph-rvq" x="3" y="4"  width="18" height="2.6" rx="1.3"/>
+              <rect class="glyph-rvq" x="3" y="9"  width="14" height="2.6" rx="1.3"/>
+              <rect class="glyph-rvq" x="3" y="14" width="10" height="2.6" rx="1.3"/>
+              <rect class="glyph-rvq" x="3" y="19" width="6"  height="2.6" rx="1.3"/>
+            </svg>
+            <h3 class="stage__name">Autoregressive</h3>
+          </div>
+          <div class="stage__body prose">
+            <p>
+              A Qwen3 global language model predicts one semantic codebook token per
+              frame and carries long-range musical structure. A local depth decoder
+              predicts seven residual codebooks, each conditioned on the global token
+              and on the codes already emitted for that frame.
+            </p>
+            <p>
+              The stage keeps the fused hidden states, not only the codes. Discrete
+              tokens alone cannot drive synthesis.
+            </p>
+          </div>
+          <div class="stage__facts">
+            <span class="fact">25 frames/s</span>
+            <span class="fact">8 codebooks</span>
+            <span class="fact">16,384 + 7 × 1,024</span>
+            <span class="fact">17.19 GiB resident</span>
+          </div>
+        </li>
+
+        <li class="stage" data-kind="flow" data-phase="2">
+          <div class="stage__head">
+            <span class="stage__no">03</span>
+            <svg class="stage__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                 fill="none" stroke="currentcolor" stroke-width="1.7" stroke-linecap="round">
+              <path class="glyph-wave" d="M2 12c2.5-7 5-7 7.5 0s5 7 7.5 0 3.5-4 5-2"/>
+            </svg>
+            <h3 class="stage__name">Acoustic</h3>
+          </div>
+          <div class="stage__body prose">
+            <p>
+              A condition encoder projects the autoregressive hidden states into
+              acoustic conditioning. A flow-matching diffusion transformer predicts
+              Flow-VAE latents, advanced by an Euler solver.
+            </p>
+            <p>
+              Long inputs are synthesized in overlapping windows and recombined so
+              the seams do not land audibly.
+            </p>
+          </div>
+          <div class="stage__facts">
+            <span class="fact">30 Euler steps</span>
+            <span class="fact">200-frame window</span>
+            <span class="fact">100-frame hop</span>
+            <span class="fact">9.15 GiB resident</span>
+          </div>
+        </li>
+
+        <li class="stage" data-kind="flow" data-phase="3">
+          <div class="stage__head">
+            <span class="stage__no">04</span>
+            <svg class="stage__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentcolor">
+              <rect class="glyph-bar" x="2"  y="10" width="2.4" height="4"  rx="1.2"/>
+              <rect class="glyph-bar" x="6"  y="7"  width="2.4" height="10" rx="1.2"/>
+              <rect class="glyph-bar" x="10" y="3"  width="2.4" height="18" rx="1.2"/>
+              <rect class="glyph-bar" x="14" y="6"  width="2.4" height="12" rx="1.2"/>
+              <rect class="glyph-bar" x="18" y="9"  width="2.4" height="6"  rx="1.2"/>
+            </svg>
+            <h3 class="stage__name">Decode</h3>
+          </div>
+          <div class="stage__body prose">
+            <p>
+              A DAC-style waveform decoder turns latents into native 44.1 kHz stereo.
+              Windows are cropped and concatenated at full rate.
+            </p>
+          </div>
+          <div class="stage__facts">
+            <span class="fact">44.1 kHz stereo</span>
+            <span class="fact">0.20 GiB resident</span>
+          </div>
+        </li>
+
+        <li class="stage" data-kind="flow" data-phase="4">
+          <div class="stage__head">
+            <span class="stage__no">05</span>
+            <svg class="stage__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                 fill="none" stroke="currentcolor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M4 9v6M8 6v12"/>
+              <path class="glyph-out" d="M13 8.5a5 5 0 0 1 0 7M16.5 6a8.5 8.5 0 0 1 0 12"/>
+            </svg>
+            <h3 class="stage__name">Output</h3>
+          </div>
+          <div class="stage__body prose">
+            <p>
+              A WAV file and its generation metadata. The current profile is
+              native 44.1 kHz stereo PCM16. The reference 32 kHz serving profile
+              is a separate, explicit output and is still being brought to parity
+              -- the two are never quietly conflated.
+            </p>
+          </div>
+          <div class="stage__facts">
+            <span class="fact">0 GiB resident</span>
+            <span class="fact">44.1 kHz PCM16 today</span>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="prose rise" style="margin-top: clamp(2rem, 5vw, 3.5rem)">
+      <p>
+        MLX evaluation is lazy, which makes the ordering load-bearing: releasing a
+        Python reference before the handoff arrays are evaluated is incorrect,
+        because pending work can still hold the previous stage's weights. Every
+        weight-owning stage materialises its durable output before teardown, and
+        the release is verified by memory telemetry rather than left to garbage
+        collection.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ handoff ═════════════════════════════════════════════════════ -->
+  <section class="wrap band">
+    <div class="head">
+      <p class="label">Stage handoff</p>
+      <h2 class="h2">What crosses between the phases is larger than the codes.</h2>
+    </div>
+
+    <div class="handoff">
+      <div class="prose rise">
+        <p>
+          Acoustic synthesis consumes fused frame hidden states, shaped
+          <span class="mono">[1, frames, 8 × 4096]</span>. They are durable stage
+          state rather than a reason to keep the autoregressive weights loaded, and
+          they are substantial even in BF16.
+        </p>
+        <p>
+          At the 9,000-frame maximum — six minutes at twenty-five frames a second —
+          the handoff alone is larger than the waveform decoder it eventually feeds.
+        </p>
+
+        <div class="slider">
+          <div class="slider__row">
+            <label class="label" for="frames">Generated frames</label>
+            <output class="slider__out" id="framesOut" for="frames">2,250 · 1:30</output>
+          </div>
+          <input type="range" id="frames" name="frames"
+                 min="250" max="9000" step="250" value="2250"
+                 aria-describedby="handoffReadouts">
+        </div>
+      </div>
+
+      <div class="readouts stagger" id="handoffReadouts">
+        <div class="readout">
+          <span class="readout__k">Duration</span>
+          <span class="readout__v" id="outDuration">1:30</span>
+        </div>
+        <div class="readout">
+          <span class="readout__k">Codes emitted</span>
+          <span class="readout__v" id="outCodes">18,000</span>
+        </div>
+        <div class="readout">
+          <span class="readout__k">Hidden state</span>
+          <span class="readout__v" id="outShape">[1, 2250, 32768]</span>
+        </div>
+        <div class="readout">
+          <span class="readout__k">BF16 handoff</span>
+          <span class="readout__v" id="outBytes">140.6 MiB</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ python api ══════════════════════════════════════════════════ -->
+  <section class="wrap band" id="api">
+    <div class="head">
+      <p class="label">Python API</p>
+      <h2 class="h2">One request object, one local checkpoint.</h2>
+      <p class="lede">
+        The pipeline keeps only the checkpoint manifest and the tokenizer between
+        requests. Model weights are loaded, evaluated, measured, and released one
+        stage at a time.
+      </p>
+    </div>
+
+    <div class="handoff">
+      <pre class="code rise"><code><i># Dense is the parity-validated profile; selective-q8 is experimental.</i>
+<b>from</b> mlx_minimax_music3 <b>import</b> GenerationRequest, Music3Pipeline
+
+pipeline = <u>Music3Pipeline</u>(<i>"weights/mlx-dense/MiniMax-Music3"</i>)
+
+result = pipeline.<u>generate</u>(
+    <u>GenerationRequest</u>(
+        caption=<i>"Warm acoustic folk, intimate vocal, "</i>
+                <i>"gentle fingerpicked guitar."</i>,
+        lyrics=<i>"[verse]\nMorning light across the room"</i>,
+        audio_duration=<b>10.0</b>,
+        seed=<b>0</b>,
+    ),
+    output=<i>"outputs/song.wav"</i>,
+)
+
+print(result.metadata.checkpoint_profile)
+print(result.metadata.memory_reports)</code></pre>
+
+      <div class="prose rise">
+        <p>
+          Every run reports the profile it used and the peak and active memory of
+          each stage, so residency is something you can read back rather than
+          something you have to trust.
+        </p>
+        <p>
+          Writing refuses to clobber an existing file unless <span class="mono">overwrite=True</span>
+          is explicit. Lyrics must carry more than structure tags — for a
+          vocal-free request, <span class="mono">instrumental_lyrics()</span> adds
+          the content the model expects.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ status ══════════════════════════════════════════════════════
+       Capabilities, not a per-module validation matrix. The matrix churns
+       with every commit and is stale the moment it is published; what a
+       reader needs is what the runtime does and what is still being
+       brought to parity. -->
+  <section class="wrap band" id="status">
+    <div class="head">
+      <p class="label">Where this stands</p>
+      <h2 class="h2">It runs end to end. What is left is parity.</h2>
+      <p class="lede">
+        Lyrics and a structured caption go in; a 44.1 kHz stereo WAV comes out, on
+        one Mac, with no PyTorch anywhere in the path. Components are checked
+        against the reference implementation rather than assumed.
+      </p>
+    </div>
+
+    <div class="tablewrap rise">
+      <table class="table">
+        <caption class="label" style="text-align:left; padding-bottom:.75rem">Capability</caption>
+        <thead>
+          <tr><th scope="col">What</th><th scope="col">State</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Lyrics and caption to stereo WAV, end to end</td><td><span class="state state--ok">Running</span></td></tr>
+          <tr><td>Component parity against the reference</td><td><span class="state state--ok">Validated</span></td></tr>
+          <tr><td>Phase-scoped residency with memory telemetry</td><td><span class="state state--ok">Running</span></td></tr>
+          <tr><td>Local checkpoint conversion and manifests</td><td><span class="state state--ok">Running</span></td></tr>
+          <tr><td>Overall music-quality parity</td><td><span class="state state--doc">Tuning</span></td></tr>
+          <tr><td>Long-form generation</td><td><span class="state state--doc">Tuning</span></td></tr>
+          <tr><td>Selective-q8 profile</td><td><span class="state state--warn">Experimental</span></td></tr>
+          <tr><td>32 kHz reference output profile</td><td><span class="state state--planned">In progress</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ checkpoint ══════════════════════════════════════════════════ -->
+  <section class="wrap band">
+    <div class="head">
+      <p class="label">Checkpoint</p>
+      <h2 class="h2">26.56 GiB that never ships with the package.</h2>
+      <p class="lede">
+        Model files are local runtime inputs. They do not belong in Git, in a wheel,
+        or in a source distribution, and installing this package neither downloads
+        them nor grants rights to them.
+      </p>
+    </div>
+
+    <div class="tablewrap rise">
+      <table class="table">
+        <caption class="label" style="text-align:left; padding-bottom:.75rem">Componentized layout · 25 files</caption>
+        <thead>
+          <tr>
+            <th scope="col">Component</th>
+            <th scope="col">Runtime role</th>
+            <th scope="col" class="n">GiB</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>language_model/</td><td>Qwen3-based global autoregressive model</td><td class="n">15.99</td></tr>
+          <tr><td>rvq_depth_decoder/</td><td>Seven residual acoustic codebooks</td><td class="n">1.20</td></tr>
+          <tr><td>condition_encoder/</td><td>Hidden-state fusion and acoustic projection</td><td class="n">0.09</td></tr>
+          <tr><td>transformer/</td><td>Flow-matching diffusion transformer</td><td class="n">9.06</td></tr>
+          <tr><td>vocoder/</td><td>Flow-VAE / DAC-style waveform decoder</td><td class="n">0.20</td></tr>
+          <tr><td>tokenizer/ · scheduler/</td><td>Prompt tokenization and Euler solver config</td><td class="n">0.01</td></tr>
+          <tr><td>Root metadata</td><td>Component index, config, model card, license</td><td class="n">&lt;0.01</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Total</td><td>Pinned to one official revision</td><td class="n">26.56</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="profiles stagger">
+      <div class="profile">
+        <p class="label">Profile · dense</p>
+        <p class="profile__use">Correctness and parity baseline</p>
+        <p class="profile__body">
+          Language model and RVQ decoder at published BF16. Acoustic components
+          and the solver at published FP32.
+        </p>
+      </div>
+      <div class="profile">
+        <p class="label">Profile · q8</p>
+        <p class="profile__use">Lower-memory runtime</p>
+        <p class="profile__body">
+          Only allowlisted MLX affine 8-bit linear layers. Every excluded module
+          keeps its dense dtype.
+        </p>
+      </div>
+      <div class="profile profile--wide">
+        <p class="label">Always FP32</p>
+        <p class="profile__body">
+          Sampling logits, classifier-free guidance, top-k filtering, softmax,
+          probability normalisation, flow integration, and waveform clamping
+          accumulate in FP32 even when their inputs arrive from a lower-precision
+          component. Precision is never inferred from a directory name, and
+          weights are never quantized during inference.
+        </p>
+      </div>
+    </div>
+
+    <div class="prose rise" style="margin-top: clamp(1.5rem, 4vw, 2.5rem)">
+      <p>
+        Every converted checkpoint carries a manifest recording the official source
+        revision, the mapping version, component files, tensor digests, and a
+        per-module precision declaration. The loader builds dense or quantized
+        module topology from that manifest before it loads a single array. Unknown
+        mapping versions and implicit fallbacks are hard errors, not warnings.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ faq ═════════════════════════════════════════════════════════ -->
+  <section class="wrap band" id="faq">
+    <div class="head">
+      <p class="label">Questions</p>
+      <h2 class="h2">The six that get asked first.</h2>
+    </div>
+
+    <div class="faq stagger">
+      <div class="qa">
+        <h3 class="qa__q">Does it need PyTorch or CUDA?</h3>
+        <p class="qa__a">
+          No. The only runtime dependency is MLX. PyTorch, Diffusers, Transformers,
+          Accelerate, Torchaudio, Librosa, and <span class="mono">huggingface_hub</span>
+          are excluded from the runtime entirely.
+        </p>
+      </div>
+      <div class="qa">
+        <h3 class="qa__q">Can I generate music with it today?</h3>
+        <p class="qa__a">
+          Yes, through the Python API, with the alpha caveats stated plainly:
+          dense components are validated and waveform execution runs end to end,
+          but overall music quality, quantized quality, and long-form generation
+          are still being brought to parity. There is no command-line interface.
+        </p>
+      </div>
+      <div class="qa">
+        <h3 class="qa__q">What hardware does it need?</h3>
+        <p class="qa__a">
+          A Mac with Apple silicon. The checkpoint is 26.56 GiB and the
+          autoregressive phase holds about 17.19 GiB at once, so a large-memory
+          configuration is the realistic target. Phase-scoped residency means the
+          peak is one phase, not the whole checkpoint.
+        </p>
+      </div>
+      <div class="qa">
+        <h3 class="qa__q">Does installing it download weights?</h3>
+        <p class="qa__a">
+          No. Weights are never in the repository, the wheel, or the source
+          distribution. Checkpoint paths are local and explicit, and the download is
+          selective and resumable by design.
+        </p>
+      </div>
+      <div class="qa">
+        <h3 class="qa__q">What sample rate comes out?</h3>
+        <p class="qa__a">
+          Today the output is native 44.1 kHz stereo PCM16. The reference 32 kHz
+          serving profile is a separate explicit profile and is still in progress.
+          The two are never silently conflated.
+        </p>
+      </div>
+      <div class="qa">
+        <h3 class="qa__q">Is this affiliated with MiniMax?</h3>
+        <p class="qa__a">
+          No. This is an independent port, not affiliated with or endorsed by
+          MiniMax. Source is MIT; the model weights are distributed separately under
+          the MiniMax-Music3 Community License.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ footer ════════════════════════════════════════════════════════ -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="eco stagger">
+      <div class="eco__col">
+        <p class="label">This project</p>
+        <a class="eco__link" href="https://github.com/appautomaton/mlx-minimax-music3" rel="noopener">Repository <span>· github</span></a>
+        <a class="eco__link" href="https://pypi.org/project/mlx-minimax-music3/" rel="noopener">Package <span>· pypi</span></a>
+        <a class="eco__link" href="https://github.com/appautomaton/mlx-minimax-music3/tree/main/docs" rel="noopener">Documentation <span>· docs</span></a>
+        <a class="eco__link" href="https://github.com/appautomaton/mlx-minimax-music3/issues" rel="noopener">Issues <span>· github</span></a>
+      </div>
+
+      <div class="eco__col">
+        <p class="label">Upstream</p>
+        <a class="eco__link" href="https://huggingface.co/MiniMaxAI/MiniMax-Music3" rel="noopener">MiniMax-Music3 <span>· weights</span></a>
+        <a class="eco__link" href="https://github.com/MiniMax-AI/MiniMax-Music3" rel="noopener">MiniMax-Music3 <span>· official</span></a>
+        <a class="eco__link" href="https://github.com/ml-explore/mlx" rel="noopener">MLX <span>· backend</span></a>
+      </div>
+
+      <div class="eco__col">
+        <p class="label">On-device, in pure MLX</p>
+        <a class="eco__link" href="https://appautomaton.renocrypt.com/mlx-h3/">mlx-h3 <span>· video + audio</span></a>
+        <a class="eco__link" href="https://appautomaton.renocrypt.com/mlx-speech/">mlx-speech <span>· speech</span></a>
+        <a class="eco__link" href="https://appautomaton.renocrypt.com/mlx-cv/">mlx-cv <span>· vision</span></a>
+        <a class="eco__link" href="https://appautomaton.renocrypt.com/mlx-spatial/">mlx-spatial <span>· 3D</span></a>
+        <a class="eco__link" href="https://appautomaton.renocrypt.com/mlx-atomistic/">mlx-atomistic <span>· simulation</span></a>
+      </div>
+    </div>
+
+    <div class="colophon">
+      <p>
+        Source code is MIT licensed. MiniMax Music 3 model weights are distributed
+        separately under the MiniMax-Music3 Community License; installing this
+        package does not download them or grant additional rights to them.
+      </p>
+      <p>
+        This project is not affiliated with or endorsed by MiniMax.
+      </p>
+      <p>
+        Part of <a class="link" href="https://appautomaton.renocrypt.com/">App Automaton</a> —
+        an open-source workshop for engineering with coding agents.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

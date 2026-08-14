@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Referenced from the organization site's robots.txt, following the same
+     pattern as the mlx-h3 and mlx-atomistic sitemaps. The location must be the
+     address that serves the page, not the github.io address that redirects to
+     it: appautomaton.github.io/scripts/sync-catalog.mjs treats a page naming
+     the redirecting address as a finding. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://appautomaton.renocrypt.com/mlx-minimax-music3/</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

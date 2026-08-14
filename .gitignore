@@ -1,0 +1,57 @@
+# System and editor files
+.DS_Store
+._*
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.zed/
+
+# Local environments and caches
+.venv*/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+__pycache__/
+*.py[cod]
+
+# Build outputs
+/build/
+/dist/
+*.egg-info/
+
+# Read-only upstream checkouts
+/.references/
+
+# Models, tokenizer assets, and conversion artifacts
+/weights/
+/models/
+/checkpoints/
+/model_cache/
+/tokenizer_cache/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.gguf
+*.bin
+*.npy
+*.npz
+
+# Private inputs and generated outputs
+/inputs/
+/outputs/
+/prompts/
+/samples/
+/artifacts/
+/runs/
+/logs/
+*.wav
+*.flac
+*.mp3
+*.m4a
+*.log

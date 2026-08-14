@@ -1,0 +1,65 @@
+[project]
+name = "mlx-minimax-music3"
+version = "0.0.1a0"
+description = "Pure MLX inference for MiniMax Music 3 on Apple Silicon."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "AppAutomaton" }]
+requires-python = ">=3.13,<3.14"
+keywords = [
+    "apple-silicon",
+    "audio-generation",
+    "generative-ai",
+    "minimax-music3",
+    "mlx",
+    "music-generation",
+    "text-to-audio",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: MacOS X",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "mlx>=0.32",
+]
+
+[project.urls]
+Homepage = "https://github.com/appautomaton/mlx-minimax-music3"
+Repository = "https://github.com/appautomaton/mlx-minimax-music3"
+Documentation = "https://appautomaton.renocrypt.com/mlx-minimax-music3/"
+Issues = "https://github.com/appautomaton/mlx-minimax-music3/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1,<10",
+    "ruff>=0.16.3,<0.17",
+    "tokenizers>=0.23.1,<0.24",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.4,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-include = [
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md",
+    "docs/**",
+    "tests/**",
+]
+source-exclude = [".DS_Store"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+exclude = [".references", ".venv", "weights"]
