@@ -1,0 +1,195 @@
+{
+  "absolute_tolerances": {
+    "depth": 0.02,
+    "language": 0.003,
+    "latents": 0.00002,
+    "waveform": 0.000002
+  },
+  "assets": {
+    "scheduler/scheduler_config.json": {
+      "invert_sigmas": true,
+      "num_train_timesteps": 1,
+      "shift": 1.0,
+      "stochastic_sampling": false,
+      "use_dynamic_shifting": false
+    },
+    "tokenizer/tokenizer.json": {
+      "fixture": "golden-v1"
+    }
+  },
+  "components": {
+    "condition_encoder": {
+      "config": {
+        "condition_hidden_dim": 64,
+        "input_hop_length": 1,
+        "input_sampling_rate": 25,
+        "num_condition_layers": 2,
+        "out_dim": 8,
+        "output_hop_length": 320,
+        "output_sampling_rate": 8000
+      },
+      "config_path": "condition_encoder/config.json",
+      "weights_dtype": "float32"
+    },
+    "language_model": {
+      "config": {
+        "attention_bias": false,
+        "attention_dropout": 0.0,
+        "dtype": "bfloat16",
+        "head_dim": 16,
+        "hidden_act": "silu",
+        "hidden_size": 64,
+        "intermediate_size": 64,
+        "max_position_embeddings": 16,
+        "model_type": "qwen3",
+        "num_attention_heads": 4,
+        "num_hidden_layers": 1,
+        "num_key_value_heads": 2,
+        "rms_norm_eps": 0.000001,
+        "rope_parameters": {
+          "rope_theta": 10000.0,
+          "rope_type": "default"
+        },
+        "tie_word_embeddings": false,
+        "vocab_size": 128
+      },
+      "config_path": "language_model/config.json",
+      "weights_dtype": "bfloat16"
+    },
+    "rvq_depth_decoder": {
+      "config": {
+        "audio_vocab_size": 64,
+        "hidden_size": 64,
+        "intermediate_size": 64,
+        "max_position_embeddings": 2,
+        "num_attention_heads": 4,
+        "num_codebooks": 2,
+        "num_layers": 1
+      },
+      "config_path": "rvq_depth_decoder/config.json",
+      "weights_dtype": "bfloat16"
+    },
+    "transformer": {
+      "config": {
+        "attention_head_dim": 4,
+        "condition_dim": 8,
+        "ff_inner_dim": 8,
+        "fourier_embedding_dim": 8,
+        "in_channels": 4,
+        "num_attention_heads": 2,
+        "num_layers": 1,
+        "rotary_dim": 4
+      },
+      "config_path": "transformer/config.json",
+      "weights_dtype": "float32"
+    },
+    "vocoder": {
+      "config": {
+        "decoder_hidden_dim": 4,
+        "decoder_input_dim": 4,
+        "latent_channels": 4,
+        "sampling_rate": 8000,
+        "upsampling_ratios": [
+          2
+        ]
+      },
+      "config_path": "vocoder/config.json",
+      "weights_dtype": "float32"
+    }
+  },
+  "expected": {
+    "dense": {
+      "depth": [
+        0.777344,
+        0.878906,
+        0.816406,
+        0.964844,
+        0.949219,
+        0.945312,
+        0.867188,
+        0.707031
+      ],
+      "language": [
+        0.012695,
+        0.07666,
+        0.014526,
+        -0.126953,
+        0.045898,
+        0.009338,
+        0.081543,
+        -0.057373
+      ],
+      "latents": [
+        -0.125629,
+        -1.820781,
+        -0.672312,
+        0.874865
+      ],
+      "topology": "a315d110e799b8401ddfe146b6495fb61819eeea8544ce0325504db780a4748a",
+      "waveform": [
+        0.019332,
+        0.015986,
+        0.019333,
+        0.015985
+      ]
+    },
+    "q8": {
+      "depth": [
+        0.777344,
+        0.878906,
+        0.816406,
+        0.964844,
+        0.949219,
+        0.945312,
+        0.867188,
+        0.707031
+      ],
+      "language": [
+        0.01178,
+        0.077148,
+        0.015503,
+        -0.126953,
+        0.044922,
+        0.010193,
+        0.082031,
+        -0.056396
+      ],
+      "latents": [
+        -0.12563,
+        -1.820781,
+        -0.672311,
+        0.874864
+      ],
+      "topology": "8ecd043dcedf12a9074f6103bfe6cb33c5f60e7765b986d6e43fd57899a64b01",
+      "waveform": [
+        0.019332,
+        0.015986,
+        0.019333,
+        0.015985
+      ]
+    }
+  },
+  "format": "mlx-minimax-music3-golden",
+  "format_version": 1,
+  "generation": {
+    "cfg_scale": 1.25,
+    "depth_input_scales": [
+      1.0,
+      0.5
+    ],
+    "depth_slice_size": 8,
+    "flow_seed": 7,
+    "flow_steps": 2,
+    "language_slice_size": 8,
+    "token_ids": [
+      1,
+      2,
+      3
+    ]
+  },
+  "maximum_checkpoint_bytes": 4194304,
+  "source": {
+    "repository": "tests/Music3MicroCheckpoint",
+    "revision": "golden-v1"
+  }
+}

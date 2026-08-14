@@ -64,7 +64,11 @@ source-exclude = [".DS_Store"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["tests/unit", "tests/integration"]
+markers = [
+    "integration: weightless tests that exercise multiple real components",
+    "full_checkpoint: opt-in tests that require the official Music 3 checkpoint",
+]
 
 [tool.ruff]
 target-version = "py313"

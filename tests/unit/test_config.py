@@ -8,25 +8,9 @@ import pytest
 from mlx_minimax_music3.config import (
     ConfigError,
     FlowTransformerConfig,
-    Music3Config,
     Qwen3Config,
     RVQDepthDecoderConfig,
 )
-
-
-def test_loads_downloaded_checkpoint_configuration_if_available() -> None:
-    root = Path("weights/bf16/MiniMax-Music3")
-    if not root.is_dir():
-        pytest.skip("Local checkpoint is not available")
-
-    config = Music3Config.from_directory(root)
-
-    assert config.language_model.hidden_size == 4096
-    assert config.language_model.num_hidden_layers == 36
-    assert config.rvq_depth_decoder.num_residual_codebooks == 7
-    assert config.transformer.hidden_size == 2048
-    assert config.vocoder.total_upsampling_ratio == 512
-    assert config.vocoder.sampling_rate == 44_100
 
 
 def test_qwen_rejects_inconsistent_attention_shape() -> None:

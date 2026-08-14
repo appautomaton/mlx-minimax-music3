@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import mlx.core as mx
 
-from dev.convert_checkpoint import plan_component
 from mlx_minimax_music3.config import VocoderConfig
 from mlx_minimax_music3.models.vocoder import ConvTranspose1d, Vocoder
 
@@ -38,21 +37,3 @@ def test_tiny_vocoder_decodes_stereo_at_total_ratio() -> None:
     assert waveform.shape == (1, 2, 24)
     assert mx.isfinite(waveform).all().item()
     assert (mx.abs(waveform) <= 1.0).all().item()
-
-
-def test_official_vocoder_topology_matches_dense_plan_if_available() -> None:
-    root = "weights/bf16/MiniMax-Music3"
-    try:
-        config = VocoderConfig.from_file(f"{root}/vocoder/config.json")
-    except ValueError:
-        return
-    model = Vocoder(config)
-    from mlx.utils import tree_flatten
-
-    actual = {name: tuple(value.shape) for name, value in tree_flatten(model.parameters())}
-    planned = {
-        mapping.output_name: mapping.output_shape
-        for mapping in plan_component(root, "vocoder")
-    }
-
-    assert actual == planned

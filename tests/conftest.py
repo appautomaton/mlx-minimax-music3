@@ -12,6 +12,17 @@ from mlx_minimax_music3.memory import (
     SystemMemory,
     capture_mlx_memory,
 )
+from tests.support.golden_checkpoint import (
+    GoldenCheckpoints,
+    build_golden_checkpoints,
+)
+
+
+@pytest.fixture(scope="session")
+def golden_checkpoints(tmp_path_factory: pytest.TempPathFactory) -> GoldenCheckpoints:
+    """Build the shared weightless regression checkpoints once per test run."""
+
+    return build_golden_checkpoints(tmp_path_factory.mktemp("music3-golden"))
 
 
 @pytest.fixture

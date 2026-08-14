@@ -23,4 +23,6 @@ All notable project changes are documented here.
 - Verify the release tag with the official MLX CPU backend and smoke-test the
   built wheel and source distribution before Trusted Publishing can begin.
 - Add package metadata, unit tests, and public-tree validation.
+- Separate unit, weightless golden integration, and opt-in full-checkpoint test
+  tiers with explicit CI cadence and a metadata-only Official topology contract.
 - Add a PyPI trusted-publishing workflow for GitHub pre-releases.

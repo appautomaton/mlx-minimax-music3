@@ -142,10 +142,16 @@ git clone https://github.com/appautomaton/mlx-minimax-music3.git
 cd mlx-minimax-music3
 uv sync --locked
 uv run ruff check .
-uv run pytest -q
+uv run pytest -q tests/unit
+uv run pytest -q tests/integration
 uv run python dev/check_public_tree.py
 uv build --no-sources
 ```
+
+Unit tests and weightless integration tests are separate default gates. Tests
+that require the complete official checkpoint are opt-in; see the
+[testing guide](https://github.com/appautomaton/mlx-minimax-music3/blob/main/docs/testing.md)
+for their scope and execution cadence.
 
 Convert the componentized official checkpoint to the dense baseline. The second
 command creates an experimental selective-q8 profile for memory and quality
