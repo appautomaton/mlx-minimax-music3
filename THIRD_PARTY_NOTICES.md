@@ -26,6 +26,11 @@ wheel distributions:
 - MLX-VLM, MLX-LM, and related Apple MLX examples: MIT License
 - ComfyUI: GNU General Public License version 3
 
-Direct adaptations must retain all notices required by the applicable upstream
-license. ComfyUI is used only to compare behavior and results; its implementation
-code is not copied into this package.
+The condition encoder, flow transformer, RVQ depth decoder, and vocoder contain
+adaptations from Hugging Face Diffusers and retain the MiniMax Team and Hugging
+Face Team copyright notices. The deterministic sampler contains portions adapted
+from SGLang. These portions are distributed under the Apache License 2.0; a full
+copy is included at `LICENSES/Apache-2.0.txt`.
+
+ComfyUI is used only to compare behavior and results; its implementation code is
+not copied into this package.

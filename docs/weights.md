@@ -66,7 +66,7 @@ does not assert that every upstream tensor is BF16: the acoustic checkpoints
 include higher-precision tensors and must retain their published dtypes until
 component parity is established.
 
-`mlx-dense/` contains the losslessly remapped MLX-native parity checkpoint.
+`mlx-dense/` contains the verified, semantically equivalent MLX-native checkpoint.
 `mlx-8bit/` contains its optional quantized derivative. Both layouts mirror the
 source component tree so loaders do not need a second component-discovery scheme.
 `manifest.json` records source repository, source revision, tensor mapping
@@ -155,6 +155,7 @@ The initial q8 policy quantizes 281 large BF16 affine modules: 252 Qwen3
 attention/MLP projections and 29 RVQ attention/MLP projections. Sampling heads,
 audio heads, embeddings, norms, the FP32 flow transformer, condition encoder,
 and vocoder remain dense. The manifest names every quantized module; the loader
-rejects any policy or topology drift. This policy is retained for sensitivity
-analysis only: a 250-frame generation diverged materially from dense and did not
-pass listening quality, so it is not a release-quality profile.
+rejects any policy or topology drift. Quantization can perturb token ranks and
+therefore change the autoregressive trajectory, while corrected-pipeline q8 runs
+have also produced valid audio. The profile remains experimental until
+multi-prompt, multi-seed listening validation is complete.

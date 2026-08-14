@@ -1,6 +1,5 @@
 #!/bin/sh
 set -eu
 
-python3 dev/check_public_tree.py --cached
-python3 dev/check_version.py
-
+uv run --locked python dev/check_public_tree.py --cached
+uv run --locked python dev/check_version.py

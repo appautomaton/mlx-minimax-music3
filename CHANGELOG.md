@@ -14,6 +14,13 @@ All notable project changes are documented here.
 - Align autoregressive seed derivation, c0 column order, and Gumbel-max sampling
   with the SGLang reference.
 - Correct the acoustic carry window from 86 to 172 latent frames.
-- Mark selective q8 as experimental after long-sequence listening quality failed.
+- Keep selective q8 experimental while multi-seed listening validation is in
+  progress.
+- Add a pure-MLX source-to-dense tensor and digest verifier.
+- Enforce the MLX-only runtime import and dependency boundary in tests.
+- Include third-party notices and the Apache License 2.0 in wheel and source
+  distributions.
+- Verify the release tag with the official MLX CPU backend and smoke-test the
+  built wheel and source distribution before Trusted Publishing can begin.
 - Add package metadata, unit tests, and public-tree validation.
 - Add a PyPI trusted-publishing workflow for GitHub pre-releases.

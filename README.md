@@ -20,7 +20,7 @@ the acoustic latents, and returns stereo waveform audio without using PyTorch or
 CUDA at runtime.
 
 > [!IMPORTANT]
-> Version `0.0.1a0` is an alpha. Dense component parity and waveform execution
+> Version `0.0.1a0` is an alpha. Dense tensor mapping and waveform execution
 > are validated locally, but end-to-end music quality parity, quantized quality,
 > long-form generation, and the reference 32 kHz output profile remain in progress.
 
@@ -30,8 +30,19 @@ CUDA at runtime.
 - End-to-end waveform generation, not token-only output.
 - Local checkpoint loading with explicit weight mapping.
 - Phase-scoped model residency for predictable unified-memory use.
-- Small, testable model components with numerical parity checks.
+- Small, testable model components with numerical correctness checks.
 - No model weights or generated media in the source distribution.
+
+## Installation
+
+The package will be installable from PyPI after the first pre-release is
+published:
+
+```sh
+uv add "mlx-minimax-music3==0.0.1a0"
+```
+
+Model weights remain a separate, explicit local download.
 
 ## Dependency policy
 
@@ -58,7 +69,7 @@ output is preferred.
 | Flow-matching acoustic model | Validated |
 | Waveform decoder | Validated |
 | Dense end-to-end music quality | In validation |
-| Selective-q8 execution | Experimental; long-sequence quality failed |
+| Selective-q8 execution | Experimental; multi-seed listening validation in progress |
 | Long-form quality and 32 kHz output parity | In progress |
 
 ## Python API
@@ -69,7 +80,7 @@ Model weights are loaded, evaluated, measured, and released one stage at a time.
 ```python
 from mlx_minimax_music3 import GenerationRequest, Music3Pipeline
 
-pipeline = Music3Pipeline("weights/mlx-8bit/MiniMax-Music3")
+pipeline = Music3Pipeline("weights/mlx-dense/MiniMax-Music3")
 result = pipeline.generate(
     GenerationRequest(
         caption="Warm acoustic folk, intimate vocal, gentle fingerpicked guitar.",
@@ -127,10 +138,10 @@ for the design.
 ```sh
 git clone https://github.com/appautomaton/mlx-minimax-music3.git
 cd mlx-minimax-music3
-uv sync
+uv sync --locked
 uv run ruff check .
 uv run pytest -q
-python dev/check_public_tree.py
+uv run python dev/check_public_tree.py
 uv build --no-sources
 ```
 
@@ -142,6 +153,11 @@ research; it is not a quality-validated release profile:
 uv run python -m dev.convert_checkpoint \
   weights/bf16/MiniMax-Music3 \
   weights/mlx-dense/MiniMax-Music3
+
+uv run python -m dev.verify_dense_checkpoint \
+  weights/bf16/MiniMax-Music3 \
+  weights/mlx-dense/MiniMax-Music3 \
+  --verify-digests
 
 uv run python -m dev.quantize_checkpoint \
   weights/mlx-dense/MiniMax-Music3 \
@@ -160,7 +176,10 @@ tag `v0.0.1a0`, `.github/workflows/workflow.yml` will build the distributions an
 publish them through PyPI trusted publishing.
 
 The release must remain marked as a pre-release. Publishing is intentionally not
-performed from a developer machine.
+performed from a developer machine. The PyPI Trusted Publisher must match owner
+`appautomaton`, repository `mlx-minimax-music3`, workflow `workflow.yml`, and
+environment `pypi`. The environment scopes the trusted-publishing identity; this
+sole-maintainer project does not require a reviewer approval rule.
 
 ## Licensing
 
