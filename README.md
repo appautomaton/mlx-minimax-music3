@@ -49,9 +49,9 @@ Model weights remain a separate, explicit local download.
 ## Dependency policy
 
 The runtime dependency is only `mlx`. A small local tokenizer reads the
-checkpoint's exact Qwen2 BPE vocabulary; its output is continuously checked
-against Hugging Face `tokenizers` during development. Dependencies are added only
-when a working implementation proves they are necessary.
+checkpoint's exact Qwen2 BPE vocabulary and is covered by runtime-generated,
+weightless tokenizer contracts. Dependencies are added only when a working
+implementation proves they are necessary.
 
 PyTorch, Diffusers, Transformers, Accelerate, Torchaudio, Librosa, and
 `huggingface_hub` are intentionally excluded from the runtime. MLX reads
@@ -71,7 +71,7 @@ output is preferred.
 | Flow-matching acoustic model | Validated |
 | Waveform decoder | Validated |
 | Dense end-to-end music quality | In validation |
-| Selective-q8 execution | Experimental; multi-seed listening validation in progress |
+| Selective-q8 execution | Supported compatibility profile; local conversion only |
 | Long-form quality and 32 kHz output parity | In progress |
 
 ## Python API
@@ -96,6 +96,38 @@ result = pipeline.generate(
 print(result.metadata.checkpoint_profile)
 print(result.metadata.memory_reports)
 ```
+
+`audio_duration` is the generation ceiling because the model may emit its audio
+end token sooner. Set `min_audio_duration` to suppress early stopping until a
+required minimum; setting both values to the same duration requests an exact
+autoregressive frame count.
+
+To test lower-precision acoustic inference without creating another checkpoint,
+cast the FP32 flow parameters once as their shards load. The model keeps its
+Euler state and final waveform decode in FP32:
+
+```python
+pipeline = Music3Pipeline(
+    "weights/mlx-dense/MiniMax-Music3",
+    flow_compute_dtype="float16",
+)
+```
+
+Runtime FP16 flow compute is experimental; the default remains the checkpoint's
+FP32 correctness path.
+
+Selective-q8 checkpoints use the same pipeline API. The loader reads the
+checkpoint manifest, reconstructs the declared quantized topology, and validates
+every stored tensor before inference; no quantization flag is required:
+
+```python
+pipeline = Music3Pipeline("weights/mlx-8bit/MiniMax-Music3")
+```
+
+Selective-q8 is a memory-oriented compatibility profile, not the recommended
+quality or throughput baseline. This project provides and tests the local
+converter but does not publish or distribute q8 model weights. Dense weights
+remain the reference inference profile.
 
 The current output profile is native 44.1 kHz stereo PCM16 WAV. The API refuses
 to overwrite an existing file unless `overwrite=True` is explicit.
@@ -148,14 +180,16 @@ uv run python dev/check_public_tree.py
 uv build --no-sources
 ```
 
-Unit tests and weightless integration tests are separate default gates. Tests
-that require the complete official checkpoint are opt-in; see the
+Unit tests and weightless integration tests are separate default gates. Every
+pytest test runs without the Official Music 3 checkpoint, downloaded tokenizer
+assets, network access, or other local model files. See the
 [testing guide](https://github.com/appautomaton/mlx-minimax-music3/blob/main/docs/testing.md)
-for their scope and execution cadence.
+for the test boundaries and GitHub CI cadence.
 
-Convert the componentized official checkpoint to the dense baseline. The second
-command creates an experimental selective-q8 profile for memory and quality
-research; it is not a quality-validated release profile:
+Convert the componentized official checkpoint to the dense baseline. The final
+command optionally creates a local selective-q8 compatibility profile for
+memory-constrained systems. It is not a published weight artifact or a
+throughput optimization:
 
 ```sh
 uv run python -m dev.convert_checkpoint \

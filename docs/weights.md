@@ -37,7 +37,6 @@ weights/
 │       ├── LICENSE
 │       ├── README.md
 │       ├── config.json
-│       ├── modular_model_index.json
 │       ├── tokenizer/
 │       ├── language_model/
 │       ├── rvq_depth_decoder/
@@ -80,7 +79,7 @@ the runtime dependencies. Start with a dry run:
 
 ```sh
 uvx hf download MiniMaxAI/MiniMax-Music3 \
-  LICENSE README.md config.json modular_model_index.json \
+  LICENSE README.md config.json \
   tokenizer/ language_model/ rvq_depth_decoder/ condition_encoder/ \
   transformer/ scheduler/ vocoder/ \
   --revision fbdf52fbaaca799592917417eb05f1899f1255ec \
@@ -137,6 +136,19 @@ Converted artifacts remain under `weights/mlx-dense/` or `weights/mlx-8bit/` and
 are never included in a package distribution. A converted checkpoint is usable
 only when its manifest matches the loader's tensor-mapping version and the
 recorded official source revision.
+
+The canonical Hugging Face model card for the dense conversion is tracked at
+`scripts/hugging_face/model_cards/appautomaton/minimax-music3-mlx.md`, following
+the same separation used by `mlx-video`. The converter deliberately excludes the
+upstream root `README.md`: the upstream card advertises Diffusers, PyTorch, and
+CUDA, while a Hub model card is mutable publication documentation and must not be
+integrity-locked into the runtime checkpoint manifest. Publication tooling maps
+the tracked card to the model repository's `README.md`. It also excludes the
+upstream `modular_model_index.json`, which is a Diffusers component registry that
+the MLX loader does not consume and which would misclassify the Hub repository as
+a Diffusers checkpoint. Component configs retain every architectural value but
+drop the Diffusers-only `_class_name` and `_diffusers_version` annotations for
+the same reason.
 
 Create the validated dense profile and experimental selective affine-q8 profile
 with:

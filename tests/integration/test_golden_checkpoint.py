@@ -67,20 +67,32 @@ def test_golden_checkpoint_is_small_and_self_contained(
         assert manifest.quantized_modules
 
 
-@pytest.mark.parametrize("profile", ("dense", "q8"))
+@pytest.mark.parametrize(
+    ("expectation", "checkpoint_profile", "flow_compute_dtype"),
+    (
+        ("dense", "dense", mx.float32),
+        ("q8", "q8", mx.float32),
+        ("runtime-f16-flow", "dense", mx.float16),
+    ),
+)
 def test_golden_checkpoint_detects_inference_regressions(
     golden_checkpoints: GoldenCheckpoints,
-    profile: str,
+    expectation: str,
+    checkpoint_profile: str,
+    flow_compute_dtype: mx.Dtype,
 ) -> None:
     contract = load_golden_contract()
     generation = cast(dict[str, Any], contract["generation"])
     expected_profiles = cast(dict[str, dict[str, Any]], contract["expected"])
     tolerances = cast(dict[str, float], contract["absolute_tolerances"])
-    checkpoint = getattr(golden_checkpoints, profile)
+    checkpoint = getattr(golden_checkpoints, checkpoint_profile)
     language_model = load_language_model(checkpoint)
     depth_decoder = load_rvq_depth_decoder(checkpoint)
     condition_encoder = load_condition_encoder(checkpoint)
-    transformer = load_flow_transformer(checkpoint)
+    transformer = load_flow_transformer(
+        checkpoint,
+        compute_dtype=flow_compute_dtype,
+    )
     vocoder = load_vocoder(checkpoint)
 
     language_output = language_model(
@@ -112,7 +124,7 @@ def test_golden_checkpoint_detects_inference_regressions(
     latents = acoustic.chunks[0].latents
     mx.eval(language_output.logits, depth_hidden, latents, waveform.samples)
 
-    expected = expected_profiles[profile]
+    expected = expected_profiles[expectation]
     assert _topology_digest(
         language_model,
         depth_decoder,

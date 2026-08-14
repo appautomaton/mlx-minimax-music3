@@ -48,9 +48,10 @@ uv run python dev/check_public_tree.py
 uv build --no-sources
 ```
 
-Do not start full-checkpoint or long-form generation runs unless the task requires
-them. Default tests must remain weightless. Follow [docs/testing.md](docs/testing.md)
-for test-tier boundaries and execution cadence.
+Do not start long-form generation runs unless the task requires them. Every
+pytest test must remain weightless and independent of official checkpoints,
+downloaded tokenizer assets, network access, and other local model files. Follow
+[docs/testing.md](docs/testing.md) for test-tier boundaries and execution cadence.
 
 ## Release Contract
 
