@@ -5,11 +5,13 @@
 **Pure MLX inference for MiniMax Music 3 on Apple silicon.**
 
 [![Development status](https://img.shields.io/badge/status-pre--alpha-F59E0B?style=flat-square)](https://github.com/appautomaton/mlx-minimax-music3)
+[![PyPI](https://img.shields.io/pypi/v/mlx-minimax-music3?include_prereleases=true&style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/mlx-minimax-music3/)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-native-000000?style=flat-square&logo=apple&logoColor=white)](https://support.apple.com/mac/)
 [![MLX](https://img.shields.io/badge/backend-MLX-7C3AED?style=flat-square)](https://github.com/ml-explore/mlx)
 
-[**appautomaton.renocrypt.com/mlx-minimax-music3**](https://appautomaton.renocrypt.com/mlx-minimax-music3/)
+[**PyPI**](https://pypi.org/project/mlx-minimax-music3/) ·
+[**Project site**](https://appautomaton.renocrypt.com/mlx-minimax-music3/)
 
 </div>
 
@@ -20,7 +22,7 @@ the acoustic latents, and returns stereo waveform audio without using PyTorch or
 CUDA at runtime.
 
 > [!IMPORTANT]
-> Version `0.0.1a0` is an alpha. Dense tensor mapping and waveform execution
+> The current release is an alpha. Dense tensor mapping and waveform execution
 > are validated locally, but end-to-end music quality parity, quantized quality,
 > long-form generation, and the reference 32 kHz output profile remain in progress.
 
@@ -35,11 +37,11 @@ CUDA at runtime.
 
 ## Installation
 
-The package will be installable from PyPI after the first pre-release is
-published:
+Install the current alpha release from
+[PyPI](https://pypi.org/project/mlx-minimax-music3/):
 
 ```sh
-uv add "mlx-minimax-music3==0.0.1a0"
+uv add --prerelease=allow mlx-minimax-music3
 ```
 
 Model weights remain a separate, explicit local download.
@@ -169,11 +171,13 @@ local checkouts may be reused through Git worktrees instead of downloading a
 second copy. Their URLs, revisions, roles, and licenses are documented in
 [the reference guide](https://github.com/appautomaton/mlx-minimax-music3/blob/main/docs/references.md).
 
-## First pre-release
+## Release process
 
-The first package version is `0.0.1a0`. After a GitHub pre-release is created from
-tag `v0.0.1a0`, `.github/workflows/workflow.yml` will build the distributions and
-publish them through PyPI trusted publishing.
+Published versions are available from the natural
+[PyPI project URL](https://pypi.org/project/mlx-minimax-music3/) and correspond
+to GitHub release tags. For each release, `.github/workflows/workflow.yml` builds
+and verifies the distributions before publishing them through PyPI trusted
+publishing.
 
 The release must remain marked as a pre-release. Publishing is intentionally not
 performed from a developer machine. The PyPI Trusted Publisher must match owner
