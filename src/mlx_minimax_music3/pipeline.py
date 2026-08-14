@@ -57,10 +57,18 @@ _REQUIRED_COMPONENTS = frozenset(
     }
 )
 _GENERATION_LOCK = Lock()
+_FLOW_COMPUTE_DTYPES = {
+    "float16": mx.float16,
+    "float32": mx.float32,
+}
 
 
 class ExperimentalQuantizationWarning(UserWarning):
     """Warn when a checkpoint profile has not passed music-quality validation."""
+
+
+class ExperimentalPrecisionWarning(UserWarning):
+    """Warn when runtime reduced precision needs listening validation."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +95,7 @@ class GenerationRequest:
     autoregressive_top_k: int = 50
     flow_steps: int = 30
     flow_cfg_scale: float = 1.7
+    min_audio_duration: float = 0.0
 
     def __post_init__(self) -> None:
         _ = self.autoregressive_config, self.flow_config
@@ -98,6 +107,7 @@ class GenerationRequest:
             seed=self.seed,
             cfg_scale=self.autoregressive_cfg_scale,
             top_k=self.autoregressive_top_k,
+            min_audio_duration=self.min_audio_duration,
         )
 
     @property
@@ -119,6 +129,7 @@ class GenerationMetadata:
     source_repository: str
     source_revision: str
     checkpoint_profile: str
+    flow_compute_dtype: str
     seed: int
     frame_count: int
     chunk_count: int
@@ -164,10 +175,16 @@ def _load_autoregressive_models(checkpoint: Path) -> _AutoregressiveModels:
     )
 
 
-def _load_acoustic_models(checkpoint: Path) -> _AcousticModels:
+def _load_acoustic_models(
+    checkpoint: Path,
+    flow_compute_dtype: str,
+) -> _AcousticModels:
     return _AcousticModels(
         condition_encoder=load_condition_encoder(checkpoint),
-        transformer=load_flow_transformer(checkpoint),
+        transformer=load_flow_transformer(
+            checkpoint,
+            compute_dtype=_FLOW_COMPUTE_DTYPES[flow_compute_dtype],
+        ),
     )
 
 
@@ -208,6 +225,7 @@ def _run_acoustic_stage(
     *,
     seed: int,
     config: FlowGenerationConfig,
+    flow_compute_dtype: str,
     policy: StageMemoryPolicy,
     include_footprint: bool,
     progress: Callable[[FlowProgress], None] | None,
@@ -215,7 +233,7 @@ def _run_acoustic_stage(
 ) -> tuple[AcousticLatents, StageMemoryReport]:
     session = StageSession(
         "acoustic",
-        lambda: _load_acoustic_models(checkpoint),
+        lambda: _load_acoustic_models(checkpoint, flow_compute_dtype),
         policy=policy,
         include_footprint=include_footprint,
     )
@@ -272,6 +290,7 @@ def _generate(
     output: str | Path | None = None,
     overwrite: bool = False,
     memory_policy: StageMemoryPolicy,
+    flow_compute_dtype: str,
     include_footprint: bool = True,
     autoregressive_progress: Callable[[GenerationProgress], None] | None = None,
     flow_progress: Callable[[FlowProgress], None] | None = None,
@@ -308,6 +327,7 @@ def _generate(
         frame_hiddens,
         seed=request.seed,
         config=request.flow_config,
+        flow_compute_dtype=flow_compute_dtype,
         policy=memory_policy,
         include_footprint=include_footprint,
         progress=flow_progress,
@@ -345,6 +365,7 @@ def _generate(
         source_repository=manifest.source_repository,
         source_revision=manifest.source_revision,
         checkpoint_profile=manifest.profile,
+        flow_compute_dtype=flow_compute_dtype,
         seed=request.seed,
         frame_count=frame_count,
         chunk_count=chunk_count,
@@ -372,6 +393,7 @@ class Music3Pipeline:
         "_checkpoint",
         "_manifest",
         "_tokenizer",
+        "flow_compute_dtype",
         "include_footprint",
         "memory_policy",
     )
@@ -381,6 +403,7 @@ class Music3Pipeline:
         checkpoint: str | Path,
         *,
         verify_digests: bool = False,
+        flow_compute_dtype: str = "float32",
         memory_policy: StageMemoryPolicy | None = None,
         include_footprint: bool = True,
     ) -> None:
@@ -388,12 +411,25 @@ class Music3Pipeline:
             checkpoint,
             verify_digests=verify_digests,
         )
+        if flow_compute_dtype not in _FLOW_COMPUTE_DTYPES:
+            raise ValueError(
+                "flow_compute_dtype must be 'float32' or 'float16'"
+            )
+        self.flow_compute_dtype = flow_compute_dtype
         if self._manifest.profile == "q8":
             warnings.warn(
                 "the selective-q8 checkpoint is experimental: long-sequence "
                 "autoregressive quality has not passed validation; use the dense "
                 "profile as the correctness baseline",
                 ExperimentalQuantizationWarning,
+                stacklevel=2,
+            )
+        if flow_compute_dtype == "float16":
+            warnings.warn(
+                "runtime FP16 flow compute is experimental: parameters are cast "
+                "after loading while Euler accumulation remains FP32; use "
+                "float32 as the correctness baseline",
+                ExperimentalPrecisionWarning,
                 stacklevel=2,
             )
         self._tokenizer = Qwen2BPETokenizer.from_directory(self._checkpoint)
@@ -432,6 +468,7 @@ class Music3Pipeline:
                 output=output,
                 overwrite=overwrite,
                 memory_policy=self.memory_policy,
+                flow_compute_dtype=self.flow_compute_dtype,
                 include_footprint=self.include_footprint,
                 autoregressive_progress=autoregressive_progress,
                 flow_progress=flow_progress,
@@ -447,6 +484,7 @@ def _run_pipeline(
     output: str | Path | None = None,
     overwrite: bool = False,
     verify_digests: bool = False,
+    flow_compute_dtype: str = "float32",
     memory_policy: StageMemoryPolicy | None = None,
     include_footprint: bool = True,
     autoregressive_progress: Callable[[GenerationProgress], None] | None = None,
@@ -459,6 +497,7 @@ def _run_pipeline(
     pipeline = Music3Pipeline(
         checkpoint,
         verify_digests=verify_digests,
+        flow_compute_dtype=flow_compute_dtype,
         memory_policy=memory_policy,
         include_footprint=include_footprint,
     )
@@ -474,6 +513,7 @@ def _run_pipeline(
 
 
 __all__ = [
+    "ExperimentalPrecisionWarning",
     "ExperimentalQuantizationWarning",
     "GenerationMetadata",
     "GenerationRequest",

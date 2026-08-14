@@ -31,6 +31,17 @@ WEIGHT_COMPONENTS = (
     "vocoder",
 )
 UNCHANGED_COMPONENTS = frozenset({"language_model", "rvq_depth_decoder"})
+EXCLUDED_ROOT_FILES = frozenset({"README.md", "modular_model_index.json"})
+DIFFUSERS_CONFIG_COMPONENTS = frozenset(
+    {
+        "condition_encoder",
+        "rvq_depth_decoder",
+        "scheduler",
+        "transformer",
+        "vocoder",
+    }
+)
+DIFFUSERS_CONFIG_KEYS = frozenset({"_class_name", "_diffusers_version"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,6 +274,8 @@ def _convert_component(
 
 
 def _copy_metadata(source_root: Path, destination_root: Path) -> list[tuple[Path, Path]]:
+    """Copy runtime metadata while leaving publication documents unmanaged."""
+
     copied = []
     for source in sorted(source_root.rglob("*")):
         if not source.is_file() or ".cache" in source.parts:
@@ -274,9 +287,31 @@ def _copy_metadata(source_root: Path, destination_root: Path) -> list[tuple[Path
         if source.name in {"inventory.json", "manifest.json"}:
             continue
         relative = source.relative_to(source_root)
+        if (
+            len(relative.parts) == 1
+            and relative.name in EXCLUDED_ROOT_FILES
+        ):
+            continue
         destination = destination_root / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
+        if (
+            relative.parts[0] in DIFFUSERS_CONFIG_COMPONENTS
+            and source.suffix == ".json"
+        ):
+            data = json.loads(source.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError(f"Component config must be an object: {source}")
+            data = {
+                key: value
+                for key, value in data.items()
+                if key not in DIFFUSERS_CONFIG_KEYS
+            }
+            destination.write_text(
+                json.dumps(data, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        else:
+            shutil.copy2(source, destination)
         copied.append((source, destination))
     return copied
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import mlx.core as mx
@@ -8,6 +9,7 @@ import pytest
 from dev.convert_checkpoint import (
     _atomic_link_or_copy,
     _convert_weights,
+    _copy_metadata,
     convert_checkpoint,
     plan_tensor,
 )
@@ -103,3 +105,42 @@ def test_dense_converter_rejects_nested_source_and_destination(
 
     with pytest.raises(ValueError, match="must not be nested"):
         convert_checkpoint(source, tmp_path)
+
+
+def test_metadata_copy_leaves_model_card_to_publication_tool(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    destination = tmp_path / "dense"
+    source.mkdir()
+    (source / "README.md").write_text("upstream CUDA card", encoding="utf-8")
+    (source / "modular_model_index.json").write_text(
+        '{"_class_name": "DiffusionPipeline"}',
+        encoding="utf-8",
+    )
+    (source / "LICENSE").write_text("model license", encoding="utf-8")
+    transformer = source / "transformer"
+    transformer.mkdir()
+    (transformer / "config.json").write_text(
+        json.dumps(
+            {
+                "_class_name": "MiniMaxMusic3Transformer1DModel",
+                "_diffusers_version": "0.40.0.dev0",
+                "num_layers": 36,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    copied = _copy_metadata(source, destination)
+
+    assert not (destination / "README.md").exists()
+    assert not (destination / "modular_model_index.json").exists()
+    assert (destination / "LICENSE").read_text(encoding="utf-8") == "model license"
+    assert json.loads(
+        (destination / "transformer/config.json").read_text(encoding="utf-8")
+    ) == {"num_layers": 36}
+    assert [path.relative_to(destination).as_posix() for _, path in copied] == [
+        "LICENSE",
+        "transformer/config.json",
+    ]

@@ -67,8 +67,14 @@ def load_golden_contract() -> dict[str, Any]:
             f"{data.get('format_version')!r}"
         )
     expected = data.get("expected")
-    if not isinstance(expected, dict) or set(expected) != {"dense", "q8"}:
-        raise ValueError("Golden fixture must define dense and q8 expectations")
+    if not isinstance(expected, dict) or set(expected) != {
+        "dense",
+        "q8",
+        "runtime-f16-flow",
+    }:
+        raise ValueError(
+            "Golden fixture must define dense, q8, and runtime-f16-flow expectations"
+        )
     return data
 
 

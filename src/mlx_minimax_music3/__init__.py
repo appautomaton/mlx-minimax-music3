@@ -2,6 +2,7 @@
 
 from ._version import __version__
 from .pipeline import (
+    ExperimentalPrecisionWarning,
     ExperimentalQuantizationWarning,
     GenerationRequest,
     GenerationResult,
@@ -10,6 +11,7 @@ from .pipeline import (
 from .prompting import PromptQualityWarning, instrumental_lyrics
 
 __all__ = [
+    "ExperimentalPrecisionWarning",
     "ExperimentalQuantizationWarning",
     "GenerationRequest",
     "GenerationResult",

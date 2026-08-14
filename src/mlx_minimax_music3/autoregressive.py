@@ -50,10 +50,15 @@ class AutoregressiveConfig:
     top_k: int = AR_TOP_K
     frame_rate: int = FRAME_RATE
     buffer_flush_interval: int = 32
+    min_audio_duration: float = 0.0
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.audio_duration) or self.audio_duration <= 0:
             raise ValueError("audio_duration must be finite and positive")
+        if not math.isfinite(self.min_audio_duration) or self.min_audio_duration < 0:
+            raise ValueError("min_audio_duration must be finite and non-negative")
+        if self.min_audio_duration > self.audio_duration:
+            raise ValueError("min_audio_duration cannot exceed audio_duration")
         if not math.isfinite(self.cfg_scale) or self.cfg_scale < 0:
             raise ValueError("cfg_scale must be finite and non-negative")
         if isinstance(self.seed, bool) or not isinstance(self.seed, int):
@@ -73,6 +78,15 @@ class AutoregressiveConfig:
                 "audio_duration is shorter than one autoregressive frame"
             )
         return frames
+
+    @property
+    def min_frames(self) -> int:
+        """Return the number of frames protected from early stopping."""
+
+        return min(
+            math.ceil(self.min_audio_duration * self.frame_rate),
+            self.max_frames,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,28 +153,47 @@ class _FrameBuffer:
         return codes, hiddens
 
 
+def _restricted_semantic_logits(
+    language_model: Qwen3ForCausalLM,
+    last_hidden: mx.array,
+    *,
+    allow_stop: bool,
+) -> mx.array:
+    """Project hidden states onto the only vocabulary rows Music 3 can sample."""
+
+    weight = language_model.lm_head.weight
+    stop_logits = last_hidden @ weight[AUDIO_END_TOKEN_ID : AUDIO_END_TOKEN_ID + 1].T
+    semantic_logits = (
+        last_hidden
+        @ weight[AUDIO_CODE_OFFSET : AUDIO_CODE_OFFSET + SEMANTIC_VOCAB_SIZE].T
+    )
+    if not allow_stop:
+        stop_logits = mx.full(stop_logits.shape, -mx.inf, dtype=stop_logits.dtype)
+    return mx.concatenate((stop_logits, semantic_logits), axis=-1).astype(mx.float32)
+
+
 def _sample_semantic_code(
     language_model: Qwen3ForCausalLM,
     last_hidden: mx.array,
     *,
+    allow_stop: bool,
     cfg_scale: float,
     top_k: int,
     seed: int,
     position: int,
     sampler: Sampler,
 ) -> mx.array:
-    logits = language_model.lm_head(last_hidden).astype(mx.float32)
-    semantic_ids = mx.arange(
-        AUDIO_CODE_OFFSET,
-        AUDIO_CODE_OFFSET + SEMANTIC_VOCAB_SIZE,
-        dtype=mx.int32,
+    # Project only the rows that c0 sampling can return. The dense checkpoint has
+    # a 200,000-token language head, while Music 3 uses 16,384 semantic codes and
+    # one stop token. Computing the other logits adds work without changing the
+    # distribution.
+    # Preserve the reference's narrowed-column order for deterministic sampling:
+    # stop first, followed by c0 codes 0 through 16,383.
+    allowed_logits = _restricted_semantic_logits(
+        language_model,
+        last_hidden,
+        allow_stop=allow_stop,
     )
-    # SGLang hashes the narrowed vocabulary column during sampling. Preserve its
-    # exact order: stop first, followed by c0 codes 0 through 16,383.
-    allowed_ids = mx.concatenate(
-        (mx.array([AUDIO_END_TOKEN_ID], dtype=mx.int32), semantic_ids)
-    )
-    allowed_logits = logits[:, allowed_ids]
     conditional = allowed_logits[:1]
     guided = classifier_free_guidance(allowed_logits, scale=cfg_scale)
     guided = mx.where(
@@ -179,7 +212,11 @@ def _sample_semantic_code(
         seed=seed,
         position=position,
     )
-    return allowed_ids[local_index]
+    return mx.where(
+        local_index == 0,
+        mx.array(AUDIO_END_TOKEN_ID, dtype=mx.int32),
+        local_index + AUDIO_CODE_OFFSET - 1,
+    ).astype(mx.int32)
 
 
 def _generate_depth_codes(
@@ -298,6 +335,7 @@ def generate_autoregressive(
         semantic_token = _sample_semantic_code(
             language_model,
             last_hidden,
+            allow_stop=frames.count >= config.min_frames,
             cfg_scale=config.cfg_scale,
             top_k=config.top_k,
             seed=seeds.sampling_seed,

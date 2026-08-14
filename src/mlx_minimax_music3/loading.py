@@ -196,6 +196,7 @@ def load_component_weights(
     directory: str | Path,
     *,
     allowed_dtypes: frozenset[str] | None = None,
+    target_dtype: mx.Dtype | None = None,
     materialize: bool = True,
 ) -> nn.Module:
     """Strictly load a component one shard at a time.
@@ -219,10 +220,22 @@ def load_component_weights(
             raise CheckpointLayoutError(
                 f"MLX loaded a different tensor set than the validated header: {path}"
             )
-        ordered = [(name, weights[name]) for name in sorted(weights)]
+        ordered = [
+            (
+                name,
+                (
+                    weights[name]
+                    if target_dtype is None
+                    else weights[name].astype(target_dtype)
+                ),
+            )
+            for name in sorted(weights)
+        ]
         model.load_weights(ordered, strict=False)
         mx.eval([value for _, value in ordered])
         del ordered, weights
+        if target_dtype is not None:
+            mx.clear_cache()
 
     mx.eval(model.parameters())
     return model
@@ -297,9 +310,15 @@ def load_condition_encoder(
 
 
 def load_flow_transformer(
-    checkpoint: str | Path, *, materialize: bool = True
+    checkpoint: str | Path,
+    *,
+    compute_dtype: mx.Dtype = mx.float32,
+    materialize: bool = True,
 ) -> FlowTransformer:
     """Instantiate and load an MLX-native dense flow transformer."""
+
+    if compute_dtype not in {mx.float32, mx.float16}:
+        raise ValueError("flow compute_dtype must be float32 or float16")
 
     directory = Path(checkpoint) / "transformer"
     config = FlowTransformerConfig.from_file(directory / "config.json")
@@ -312,6 +331,7 @@ def load_flow_transformer(
         model,
         directory,
         allowed_dtypes=frozenset({"F32"}),
+        target_dtype=compute_dtype,
         materialize=materialize,
     )
 

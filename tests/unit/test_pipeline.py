@@ -60,7 +60,8 @@ def test_private_pipeline_orders_residency_and_writes_audio(
         load_order.append("autoregressive")
         return pipeline._AutoregressiveModels(None, None)
 
-    def load_acoustic(checkpoint: Path):
+    def load_acoustic(checkpoint: Path, flow_compute_dtype: str):
+        assert flow_compute_dtype == "float32"
         load_order.append("acoustic")
         return pipeline._AcousticModels(None, None)
 
@@ -111,6 +112,7 @@ def test_private_pipeline_orders_residency_and_writes_audio(
     assert result.metadata.frame_count == 1
     assert result.metadata.chunk_count == 1
     assert result.metadata.seed == 7
+    assert result.metadata.flow_compute_dtype == "float32"
     assert [report.label for report in result.metadata.memory_reports] == [
         "autoregressive",
         "acoustic",
@@ -152,6 +154,36 @@ def test_q8_pipeline_warns_that_quality_is_experimental(
         instance = pipeline.Music3Pipeline(tmp_path)
 
     assert instance.checkpoint_profile == "q8"
+
+
+def test_runtime_f16_flow_warns_that_quality_is_experimental(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_manifest(tmp_path)
+    monkeypatch.setattr(
+        pipeline.Qwen2BPETokenizer,
+        "from_directory",
+        classmethod(lambda cls, checkpoint: object()),
+    )
+
+    with pytest.warns(
+        pipeline.ExperimentalPrecisionWarning,
+        match="float32",
+    ):
+        instance = pipeline.Music3Pipeline(
+            tmp_path,
+            flow_compute_dtype="float16",
+        )
+
+    assert instance.checkpoint_profile == "dense"
+    assert instance.flow_compute_dtype == "float16"
+
+
+def test_pipeline_rejects_unknown_flow_compute_dtype(tmp_path: Path) -> None:
+    _write_manifest(tmp_path)
+
+    with pytest.raises(ValueError, match="flow_compute_dtype"):
+        pipeline.Music3Pipeline(tmp_path, flow_compute_dtype="float8")
 
 
 def test_generation_request_builds_validated_stage_configs() -> None:

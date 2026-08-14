@@ -45,7 +45,6 @@ dev = [
     "mlx[cpu]>=0.32,<0.33; sys_platform == 'linux'",
     "pytest>=9.1.1,<10",
     "ruff>=0.16.3,<0.17",
-    "tokenizers>=0.23.1,<0.24",
 ]
 
 [build-system]
@@ -67,7 +66,6 @@ pythonpath = ["."]
 testpaths = ["tests/unit", "tests/integration"]
 markers = [
     "integration: weightless tests that exercise multiple real components",
-    "full_checkpoint: opt-in tests that require the official Music 3 checkpoint",
 ]
 
 [tool.ruff]

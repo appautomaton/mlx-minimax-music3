@@ -5,6 +5,7 @@ from pathlib import Path
 
 import mlx.core as mx
 import pytest
+from mlx.utils import tree_flatten
 
 from mlx_minimax_music3.config import Qwen3Config
 from mlx_minimax_music3.loading import (
@@ -50,6 +51,25 @@ def test_strict_sharded_load_round_trip(tmp_path: Path) -> None:
     mx.eval(actual)
 
     assert mx.array_equal(expected, actual).item()
+
+
+def test_sharded_load_casts_each_tensor_to_target_dtype(tmp_path: Path) -> None:
+    source = Qwen3ForCausalLM(_config())
+    component = tmp_path / "language_model"
+    component.mkdir()
+    source.save_weights(str(component / "model.safetensors"))
+    restored = Qwen3ForCausalLM(_config())
+
+    load_component_weights(
+        restored,
+        component,
+        allowed_dtypes=frozenset({"F32"}),
+        target_dtype=mx.float16,
+    )
+
+    assert {
+        value.dtype for _, value in tree_flatten(restored.parameters())
+    } == {mx.float16}
 
 
 def test_index_must_point_to_the_actual_tensor_shard(tmp_path: Path) -> None:

@@ -113,6 +113,8 @@ def solve_flow_chunk(
             )
 
     condition_cfg = mx.concatenate((condition, mx.zeros_like(condition)), axis=0)
+    compute_dtype = transformer.proj_in.weight.dtype
+    condition_cfg_compute = condition_cfg.astype(compute_dtype)
     step_size = 1.0 / config.num_steps
     for step in range(config.num_steps):
         if cancelled is not None and cancelled():
@@ -122,9 +124,15 @@ def solve_flow_chunk(
             latents[:, :overlap] = (
                 1.0 - (1.0 - 1e-6) * time_value
             ) * noise_prompt + time_value * latent_prompt
-        latent_cfg = mx.broadcast_to(latents, (2, *latents.shape[1:]))
-        timestep_cfg = mx.full((2,), time_value, dtype=latents.dtype)
-        velocity = transformer(latent_cfg, timestep_cfg, condition_cfg)
+        latent_cfg = mx.broadcast_to(latents, (2, *latents.shape[1:])).astype(
+            compute_dtype
+        )
+        timestep_cfg = mx.full((2,), time_value, dtype=compute_dtype)
+        velocity = transformer(
+            latent_cfg,
+            timestep_cfg,
+            condition_cfg_compute,
+        ).astype(mx.float32)
         guided = (
             config.cfg_scale * velocity[:1]
             + (1.0 - config.cfg_scale) * velocity[1:2]
